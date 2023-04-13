@@ -4,7 +4,7 @@ from random import randrange
 import numpy as np
 
 from classes.cube_classes import Cube3State, Cube3
-from generate_states import move_index_to_char
+from .generate_states import move_index_to_char
 
 
 def generate_random_states_and_generators(num_states: int, backwards_range: Tuple[int, int]) -> Tuple[List[List[str]], List[int]]:

@@ -8,7 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from classes.cube_classes import Cube3State, Cube3
-from symmetry_config import rotation_gen_mapper, rotation_symmetry_generators, reflection_gen_mapper
+from .symmetry_config import rotation_gen_mapper, rotation_symmetry_generators, reflection_gen_mapper
 
 
 # --- UTILS ---
@@ -227,7 +227,7 @@ def generate_symmetric_cubes(
     - double_moves, bool - if True, count double_moves as one move
     - mininterval, int - used 
     '''
-    cube_gens_length = calculate_length_of_generators(cube_generators, double_moves=double_moves)
+    cube_gens_length = calculate_length_of_generators(cube_generators, double_moves_as_one=double_moves)
     
     state2gen_dict = dict()
     generated_states = []

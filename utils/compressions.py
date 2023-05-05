@@ -8,7 +8,6 @@ import seaborn as sns
 import torch
 from tqdm import tqdm
 
-from utils.plot_compression import plot_histo
 from utils.random_seed import seed_worker, seed_all
 
 
@@ -119,3 +118,18 @@ def plot_distance_compressions(distance_all_acts, model_name):
         all_compressions += act_class_compressions
         plot_histo(act_class_compressions, f'imgs/{model_name}/{i+1}moves_activ_class_sizes_histo.png')
     plot_histo(all_compressions, f'imgs/{model_name}/all_moves_activ_class_sizes_histo.png')
+
+
+def plot_class_ids_per_compressions(distance_all_acts, df, model_name):
+    all_classes_counts = []
+    for i in range(len(distance_all_acts)):
+        dist_acts = distance_all_acts[i]
+        classes_counts = []
+        for key, values in dist_acts.items():
+            classes = []
+            for j, _ in values:
+                classes.append(df.iloc[j]['class_id'])
+            classes_counts.append(len(set(classes)))
+        all_classes_counts += classes_counts
+        plot_histo(classes_counts, f'imgs/{model_name}/{i+1}moves_class_counts_per_activs.png')
+    plot_histo(all_classes_counts, f'imgs/{model_name}/all_moves_class_counts_per_activs.png')

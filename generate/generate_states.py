@@ -141,7 +141,7 @@ def generate_rotated_cubestates(cube_generator: List[str], orig_state: Cube3Stat
     cube_generator: a move sequence representing the original cube
     Generate a list of cubes rotated in all possible ways and then scrambled according to the generator.
     '''
-    generators = [cube_generator]
+    generators = [list(cube_generator)]
     states = [orig_state]
     gen_set = {tuple(cube_generator)}
     state_set = {orig_state.colors.tostring()}

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from collections.abc import Iterable
 from typing import List, Callable, Dict, Set, Tuple, Type
 
 import matplotlib.pyplot as plt
@@ -35,7 +36,10 @@ def create_dicts_from_data(df: pd.DataFrame, distance: int, input_handling_func:
     distance_x_gens = df[df['distance'] == distance]['generator']
     distance_x_dict = defaultdict(list)
     for i, (cube, cube_gen) in enumerate(tqdm(list(zip(distance_x, distance_x_gens)))):
-        processed_data = input_handling_func(cube, verbose=False)
+        processed_data = input_handling_func(cube, verbose=False, aggregate=False, for_hashing=True)
+        if isinstance(processed_data[0], np.ndarray):
+            processed_data = [hash(sub_array.tostring()) for sub_array in processed_data]
+        processed_data = sorted(processed_data)
         distance_x_dict[tuple(processed_data)].append((i, cube_gen))
     return distance_x_dict
 
@@ -59,7 +63,8 @@ def create_dicts_from_activations(df: pd.DataFrame, distance: int, input_handlin
     for i, (cube, cube_gen) in enumerate(tqdm(list(zip(distance_x, distance_x_gens)))):
         activations = []
         for network in networks:
-            activation = float(np.squeeze(network(torch.tensor(input_handling_func(cube, verbose=False))).detach().numpy()))
+            activation = float(np.squeeze(network(torch.tensor(input_handling_func(cube, verbose=False, aggregate=False, for_hashing=False))).detach().numpy()))
+            
             activation = int(activation * 1e8)
             activations.append(activation)
         distance_x_dict[tuple(activations)].append((i, cube_gen))
@@ -100,7 +105,7 @@ def plot_histo(data, filename, visible_bins=20):
     plt.figure(figsize=(10,5))
     nr_of_bins = max(data)
     plot = sns.histplot(data, bins=nr_of_bins)
-    x_ticks = [i for i in range(2, nr_of_bins+1, max(nr_of_bins//visible_bins, 1))]
+    x_ticks = [i for i in range(0, nr_of_bins+2, max(nr_of_bins//visible_bins, 1))]
     plt.xticks(x_ticks)
     
     plt.savefig(filename)

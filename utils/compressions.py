@@ -52,18 +52,22 @@ def calculate_all_dicts_from_data(df: pd.DataFrame, max_distance: int, input_han
     return distance_all_dicts
 
 
-def create_dicts_from_activations(df: pd.DataFrame, distance: int, input_handling_func: Callable, networks: List[torch.nn.Module]) -> Dict[Tuple, Tuple]:
+def create_dicts_from_activations(df: pd.DataFrame, distance: int, input_handling_func: Callable, networks: List[torch.nn.Module], is_graph_nn: bool = False) -> Dict[Tuple, Tuple]:
     '''
     Use dataset of cube states and their generators to produce a dictionary of compression classes
     based on forward activations of randomly initialized untrained neural networks.
     '''
     distance_x = df[df['distance'] == distance]['colors']
     distance_x_gens = df[df['distance'] == distance]['generator']
+    distance_x_dist = df[df['distance'] == distance]['distance']
     distance_x_dict = defaultdict(list)
-    for i, (cube, cube_gen) in enumerate(tqdm(list(zip(distance_x, distance_x_gens)))):
+    for i, (cube, cube_gen, cube_dist) in enumerate(tqdm(list(zip(distance_x, distance_x_gens, distance_x_dist)))):
         activations = []
         for network in networks:
-            activation = float(np.squeeze(network(torch.tensor(input_handling_func(cube, verbose=False, aggregate=False, for_hashing=False))).detach().numpy()))
+            if is_graph_nn:
+                activation = float(np.squeeze(network(input_handling_func(cube, cube_dist, node_features_size=10, verbose=False, aggregate=False, for_hashing=False)).detach().numpy()))
+            else:
+                activation = float(np.squeeze(network(torch.tensor(input_handling_func(cube, verbose=False, aggregate=False, for_hashing=False))).detach().numpy()))
             
             activation = int(activation * 1e8)
             activations.append(activation)
@@ -71,11 +75,11 @@ def create_dicts_from_activations(df: pd.DataFrame, distance: int, input_handlin
     return distance_x_dict
 
 
-def calculate_all_dicts_from_activations(df: pd.DataFrame, max_distance: int, input_handling_func: Callable, networks: List[torch.nn.Module]) -> List[Dict[Tuple, Tuple]]:
+def calculate_all_dicts_from_activations(df: pd.DataFrame, max_distance: int, input_handling_func: Callable, networks: List[torch.nn.Module], is_graph_nn: bool = False) -> List[Dict[Tuple, Tuple]]:
     '''
     Compute compression dictionaries for cubes with distance from goal in range between 1 and max_distance.
     '''
-    distance_all_dicts = [create_dicts_from_activations(df, distance, input_handling_func, networks) for distance in range(1, max_distance + 1)]
+    distance_all_dicts = [create_dicts_from_activations(df, distance, input_handling_func, networks, is_graph_nn=is_graph_nn) for distance in range(1, max_distance + 1)]
     return distance_all_dicts
 
 

@@ -196,7 +196,7 @@ def calc_all_angles(colors, verbose=True, aggregate=False, for_hashing=False):
 
 distance_all_data_angle = calculate_all_dicts_from_data(df=df, max_distance=N_MOVES, input_handling_func=calc_all_angles)
 
-with open('data/temp/distance{N_MOVES}_all_data_angle_single.pkl', 'wb') as f:
+with open(f'data/temp/distance{N_MOVES}_all_data_angle_single.pkl', 'wb') as f:
     pickle.dump(distance_all_data_angle, f)
     
 set_intersections_data_angle = compute_set_intersections(distance_all_data_angle)

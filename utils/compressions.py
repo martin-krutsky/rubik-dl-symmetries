@@ -24,6 +24,35 @@ def create_networks(NetworkClass: Type[torch.nn.Module], network_args: dict = {}
     return networks
 
 
+# --- COMPRESSION FOR SINGLE COLOR DATASET ---
+
+
+def compress_for_color(df: pd.DataFrame, input_handling_func: Callable) -> Dict[Tuple, Tuple]:
+    compression_dict = dict()
+    for sym_class in tqdm(df.symmetry_class.unique()):
+        df_filtered = df[df['symmetry_class'] == sym_class]
+        indices = df_filtered['index']
+        colors = df_filtered['colors']
+        sym_class_comp_set = set()
+        processed_data = None
+        for ind, color_indices in zip(indices, colors):
+            processed_data = input_handling_func(color_indices)
+#             print(processed_data)
+            if isinstance(processed_data, np.ndarray):
+                processed_data = hash(processed_data.tostring())
+            sym_class_comp_set.add(processed_data)
+        if len(sym_class_comp_set) > 1:
+            print('ERROR: Multiple hashes in a symmetry class', sym_class)
+            print(colors)
+            print('comp set', sym_class_comp_set)
+            break
+            
+        if processed_data in compression_dict:
+            print(f'ERROR: Same hashes ({processed_data}) for symmetry class', sym_class, 'and', compression_dict[processed_data])
+            break
+        compression_dict[processed_data] = sym_class
+
+
 # --- COMPRESSION DICTIONARIES ---
 
 
@@ -52,7 +81,7 @@ def calculate_all_dicts_from_data(df: pd.DataFrame, max_distance: int, input_han
     return distance_all_dicts
 
 
-def create_dicts_from_activations(df: pd.DataFrame, distance: int, input_handling_func: Callable, networks: List[torch.nn.Module], is_graph_nn: bool = False) -> Dict[Tuple, Tuple]:
+def create_dicts_from_activations(df: pd.DataFrame, distance: int, input_handling_func: Callable, networks: List[torch.nn.Module], is_graph_nn: bool = False, node_features_size=9) -> Dict[Tuple, Tuple]:
     '''
     Use dataset of cube states and their generators to produce a dictionary of compression classes
     based on forward activations of randomly initialized untrained neural networks.
@@ -65,7 +94,8 @@ def create_dicts_from_activations(df: pd.DataFrame, distance: int, input_handlin
         activations = []
         for network in networks:
             if is_graph_nn:
-                activation = float(np.squeeze(network(input_handling_func(cube, cube_dist, node_features_size=10, verbose=False, aggregate=False, for_hashing=False)).detach().numpy()))
+                prepared_data = input_handling_func(cube, cube_dist, node_features_size=node_features_size, verbose=False, aggregate=False, for_hashing=False)
+                activation = float(np.squeeze(network(prepared_data).detach().numpy()))
             else:
                 activation = float(np.squeeze(network(torch.tensor(input_handling_func(cube, verbose=False, aggregate=False, for_hashing=False))).detach().numpy()))
             
@@ -114,6 +144,7 @@ def plot_histo(data, filename, visible_bins=20):
     
     plt.savefig(filename)
     plt.show()
+    plt.close()
 
 
 def plot_distance_compressions(distance_all_acts, model_name):
@@ -131,13 +162,20 @@ def plot_distance_compressions(distance_all_acts, model_name):
 
 def plot_class_ids_per_compressions(distance_all_acts, df, model_name):
     all_classes_counts = []
+    generators = df.generator
     for i in range(len(distance_all_acts)):
         dist_acts = distance_all_acts[i]
         classes_counts = []
         for key, values in dist_acts.items():
             classes = []
-            for j, _ in values:
-                classes.append(df.iloc[j]['class_id'])
+            for _, generator in values:
+                idx = None
+                for index, row in df.iterrows():
+#                     print(row['generator'])
+#                     print(generator)
+                    if generator[0] in row['generator']:
+                        classes.append(row['class_id'])
+                        break
             classes_counts.append(len(set(classes)))
         all_classes_counts += classes_counts
         plot_histo(classes_counts, f'imgs/{model_name}/{i+1}moves_class_counts_per_activs.png')

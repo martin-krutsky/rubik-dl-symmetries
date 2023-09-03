@@ -204,7 +204,7 @@ def calculate_length_of_generators(cube_generators: List[List[str]], double_move
     '''
     Calculate the lengths of `cube_generators` with the possibility to (not) count double moves as one.
     '''
-    cube_gens_length = []
+    cube_gens_lengths = []
     for generator in cube_generators:
         gen_len = len(generator)
         if double_moves_as_one:
@@ -215,19 +215,21 @@ def calculate_length_of_generators(cube_generators: List[List[str]], double_move
                     notrem_flag = False
                 else:
                     notrem_flag = True
-        cube_gens_length.append(gen_len)
-    return cube_gens_length
+        cube_gens_lengths.append(gen_len)
+    return cube_gens_lengths
 
 
 def generate_symmetric_cubes(
-        cube_generators: List[List[str]], double_moves: bool = False, mininterval: int = 1, add_inverse: bool = False
+        cube_generators: List[List[str]], double_moves: bool = False, cube_gens_lengths=None, mininterval: int = 1, add_inverse: bool = False
     ) -> Tuple[List[List[Cube3State]], Tuple[List[List[Cube3State]], int], Dict[str, List[List[str]]]]:
     '''
     Putting together generation of all symmetries from a dataset of generators `cube_generators`.
     - double_moves, bool - if True, count double_moves as one move
+    - cube_gens_lengths, list of distances corr. to the cube generators, if None (default), calculated automatically
     - mininterval, int - used 
     '''
-    cube_gens_length = calculate_length_of_generators(cube_generators, double_moves_as_one=double_moves)
+    if cube_gens_lengths is None:
+        cube_gens_lengths = calculate_length_of_generators(cube_generators, double_moves_as_one=double_moves)
     
     state2gen_dict = dict()
     generated_states = []
@@ -261,5 +263,5 @@ def generate_symmetric_cubes(
                 state2gen_dict[state_clr_str] = [generator]
                 states_to_append.append(state)
         generated_states.append(states_to_append)
-        state_classes_list.append((states_to_append, cube_gens_length[i]))  # len(cube_gen)))
+        state_classes_list.append((states_to_append, cube_gens_lengths[i]))  # len(cube_gen)))
     return generated_states, state_classes_list, state2gen_dict

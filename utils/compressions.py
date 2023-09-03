@@ -27,8 +27,9 @@ def create_networks(NetworkClass: Type[torch.nn.Module], network_args: dict = {}
 # --- COMPRESSION FOR SINGLE COLOR DATASET ---
 
 
-def compress_for_color(df: pd.DataFrame, input_handling_func: Callable) -> Dict[Tuple, Tuple]:
-    compression_dict = dict()
+def compress_for_color(df: pd.DataFrame, input_handling_func: Callable, break_on_error=True, compression_dict=None) -> Dict[Tuple, Tuple]:
+    if compression_dict is None:
+        compression_dict = dict()
     for sym_class in tqdm(df.symmetry_class.unique()):
         df_filtered = df[df['symmetry_class'] == sym_class]
         indices = df_filtered['index']
@@ -37,20 +38,22 @@ def compress_for_color(df: pd.DataFrame, input_handling_func: Callable) -> Dict[
         processed_data = None
         for ind, color_indices in zip(indices, colors):
             processed_data = input_handling_func(color_indices)
-#             print(processed_data)
             if isinstance(processed_data, np.ndarray):
                 processed_data = hash(processed_data.tostring())
             sym_class_comp_set.add(processed_data)
         if len(sym_class_comp_set) > 1:
             print('ERROR: Multiple hashes in a symmetry class', sym_class)
-            print(colors)
-            print('comp set', sym_class_comp_set)
-            break
+            # print(colors)
+            # print('comp set', sym_class_comp_set)
+            if break_on_error:
+                break
             
         if processed_data in compression_dict:
             print(f'ERROR: Same hashes ({processed_data}) for symmetry class', sym_class, 'and', compression_dict[processed_data])
-            break
+            if break_on_error:
+                break
         compression_dict[processed_data] = sym_class
+    return compression_dict
 
 
 # --- COMPRESSION DICTIONARIES ---
@@ -109,14 +112,17 @@ def calculate_all_dicts_from_activations(df: pd.DataFrame, max_distance: int, in
     '''
     Compute compression dictionaries for cubes with distance from goal in range between 1 and max_distance.
     '''
-    distance_all_dicts = [create_dicts_from_activations(df, distance, input_handling_func, networks, is_graph_nn=is_graph_nn) for distance in range(1, max_distance + 1)]
+    if max_distance is None:
+        distance_all_dicts = [create_dicts_from_activations(df, distance, input_handling_func, networks, is_graph_nn=is_graph_nn) for distance in df['distance'].unique()]
+    else:
+        distance_all_dicts = [create_dicts_from_activations(df, distance, input_handling_func, networks, is_graph_nn=is_graph_nn) for distance in range(1, max_distance + 1)]
     return distance_all_dicts
 
 
 # --- SET INTERSECTION ---
 
 
-def compute_set_intersections(distance_all_acts: List[Dict[Tuple, Tuple]]) -> Dict[Tuple, Set]:
+def compute_set_intersections(distance_all_acts: List[Dict[Tuple, Tuple]], distances=None) -> Dict[Tuple, Set]:
     '''
     Given compression dictionaries, calculate their possible intersection, i.e. the NN's inability
     to distinguish between compression classes with cubes with different distance to goal.
@@ -124,8 +130,12 @@ def compute_set_intersections(distance_all_acts: List[Dict[Tuple, Tuple]]) -> Di
     intersections = {}
     for i in range(len(distance_all_acts)):
         for j in range(i+1, len(distance_all_acts)):
-            intersections[(i+1,j+1)] = set(distance_all_acts[i].keys()) & set(distance_all_acts[j].keys())
-            print(f'Intersection size between sets {i+1} AND {j+1}: {len(intersections[(i+1,j+1)])}')
+            if distances is None:
+                intersections[(i+1,j+1)] = set(distance_all_acts[i].keys()) & set(distance_all_acts[j].keys())
+                print(f'Intersection size between sets {i+1} AND {j+1}: {len(intersections[(i+1,j+1)])}')
+            else:
+                intersections[(distances[i],distances[j])] = set(distance_all_acts[i].keys()) & set(distance_all_acts[j].keys())
+                print(f'Intersection size between sets {distances[i]} AND {distances[j]}: {len(intersections[(distances[i],distances[j])])}')
     return intersections
 
 

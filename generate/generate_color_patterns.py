@@ -104,3 +104,16 @@ def generate_color_indices(folder, filename, middle_idx_nr):
 
     np.save(os.path.join(folder, filename), dataset)
     
+
+def visualize_color_indices(indices):
+    indices = np.array(indices)
+    cross_copy = np.array(positions_on_cross_list[0])
+    for index in indices:
+        cross_copy[cross_copy == index] = -2
+    cross_copy[(cross_copy != -1) & (cross_copy != -2)] = 0
+    cross_list = cross_copy.flatten().tolist()
+    map_dict = {-1: ' ', -2: '\033[91mX', 0: '\033[90m-'}
+    str_arr = np.array([map_dict[item] for item in cross_list]).reshape(cross_copy.shape)
+    str_vis = '\n'.join([''.join(row) for row in str_arr])
+    return str_vis
+    

@@ -32,10 +32,29 @@ RANDOM_SEED = CURR_CONFIG[0]
 TEST_SIZE = CURR_CONFIG[1]
 SYMEQNET_LOADER_PARAMS['worker_init_fn'] = seed_worker
 
-    
+
+def load_model(PATH):
+    model = SymEqNet(**SYMEQNET_HYPERPARAMS)
+    model.load_state_dict(torch.load(PATH))
+    return model
+
+
+def predict(model, X, labels):
+    predictions = []
+    model.eval()
+    data_list = create_data_list(X, labels)
+    for x, y in data_list:
+        with torch.no_grad():
+            outputs = network(x)
+            predictions.append(torch.squeeze(outputs))
+    return predictions
+
+
 def eval_test(network, epoch, test_loader, test_criterion):
     print('Evaluating on test dataset')
     network.eval()
+    if test_loader is None:
+        return None, None
     test_losses = []
     for data in tqdm(test_loader):
         with torch.no_grad():
@@ -63,14 +82,20 @@ def prepare_data(rnd_seed, test_size, max_distance=None):
     class_ids = df['class_id'].tolist()
     targets = df['distance'].tolist()
 
-    X_train, X_test, y_train, y_test = train_test_split(dataset, targets, stratify=targets, test_size=test_size, random_state=rnd_seed)
+    if test_size == 0:
+        X_train, X_test, y_train, y_test = dataset, [], targets, []
+    else:
+        X_train, X_test, y_train, y_test = train_test_split(dataset, targets, stratify=targets, test_size=test_size, random_state=rnd_seed)
     print(f'Size of trainset: {len(y_train)}, Size of testset: {len(y_test)}')
 
     training_set = create_data_list(X_train, y_train)
     test_set = create_data_list(X_test, y_test)
 
     trainloader = DataLoader(training_set, **SYMEQNET_LOADER_PARAMS)
-    testloader = DataLoader(test_set, **SYMEQNET_LOADER_PARAMS)
+    if test_size == 0:
+        testloader = None
+    else:
+        testloader = DataLoader(test_set, **SYMEQNET_LOADER_PARAMS)
     return trainloader, testloader
 
 
@@ -125,12 +150,12 @@ def train(trainloader, testloader, rnd_seed):
         test_losses_ls, mean_test_loss = eval_test(net, epoch, testloader, criterion2)
         mean_test_losses.append(mean_test_loss)
     print('Finished Training')
-    return train_losses_ls, mean_train_losses, test_losses_ls, mean_test_losses
+    return net, train_losses_ls, mean_train_losses, test_losses_ls, mean_test_losses
 
     
 def run_pipeline(rnd_seed=RANDOM_SEED, test_size=TEST_SIZE, max_distance=None):
     trainloader, testloader = prepare_data(rnd_seed, test_size, max_distance=max_distance)
-    train_losses_ls, mean_train_losses, test_losses_ls, mean_test_losses = train(
+    trained_net, train_losses_ls, mean_train_losses, test_losses_ls, mean_test_losses = train(
         trainloader, testloader, rnd_seed
     )
     
@@ -139,6 +164,7 @@ def run_pipeline(rnd_seed=RANDOM_SEED, test_size=TEST_SIZE, max_distance=None):
     
     folder = f'results/{DATASET_NAME}/SymEqNet'
     os.makedirs(folder, exist_ok=True)
+    torch.save(trained_net.state_dict(), f'{folder}/model_rs{RANDOM_SEED}_ts{test_size}.pth')
     np.save(f'{folder}/last_train_losses_rs{rnd_seed}_ts{test_size}.npy',
             train_losses_ls)
     np.save(f'{folder}/mean_train_losses_rs{rnd_seed}_ts{test_size}.npy',
@@ -171,4 +197,4 @@ def run_pipeline(rnd_seed=RANDOM_SEED, test_size=TEST_SIZE, max_distance=None):
 
     
 if __name__ == '__main__':
-    run_pipeline()
+    run_pipeline(max_distance=MAX_DISTANCE)

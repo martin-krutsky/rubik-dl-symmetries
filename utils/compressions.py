@@ -96,6 +96,7 @@ def create_dicts_from_activations(df: pd.DataFrame, distance: int, input_handlin
     for i, (cube, cube_gen, cube_dist) in enumerate(tqdm(list(zip(distance_x, distance_x_gens, distance_x_dist)))):
         activations = []
         for network in networks:
+            network.eval()
             if is_graph_nn:
                 prepared_data = input_handling_func(cube, cube_dist, node_features_size=node_features_size, verbose=False, aggregate=False, for_hashing=False)
                 activation = float(np.squeeze(network(prepared_data).detach().numpy()))

@@ -14,7 +14,7 @@ torch.set_default_dtype(torch.float64)
 
 from classes.cube_classes import Cube3State, Cube3
 from utils.random_seed import seed_worker, seed_all, init_weights
-from pytorch_classes.resnet_model import ResNet
+from pytorch_classes.feedforward_model import FeedForward
 from pytorch_classes.resnet_dataset import ResNetDataset
 from pytorch_classes.config import *
 
@@ -31,7 +31,7 @@ RESNET_LOADER_PARAMS['worker_init_fn'] = seed_worker
 
 
 def load_model(PATH):
-    model = ResNet(**RESNET_HYPERPARAMS)
+    model = FeedForward(**FEEDFORWARD_HYPERPARAMS)
     model.load_state_dict(torch.load(PATH))
     return model
 
@@ -49,9 +49,9 @@ def predict(model, X, labels):
     
 def eval_test(network, epoch, test_loader, test_criterion):
     network.eval()
+    test_losses = []
     if test_loader is None:
         return None, None
-    test_losses = []
     for data in tqdm(test_loader):
         with torch.no_grad():
             inputs, labels = data
@@ -96,7 +96,7 @@ def prepare_data(rnd_seed, test_size, max_distance=None):
 def train(trainloader, testloader, rnd_seed):
     seed_all(rnd_seed)
     
-    net = ResNet(**RESNET_HYPERPARAMS)
+    net = FeedForward(**FEEDFORWARD_HYPERPARAMS)
     # net.apply(init_weights)
 
     criterion = nn.MSELoss()
@@ -153,7 +153,7 @@ def run_pipeline(rnd_seed=RANDOM_SEED, test_size=TEST_SIZE, max_distance=None):
     print(f'Average Train MAE After Training: {np.mean(train_losses_ls)}')
     print(f'Average Test MAE After Training: {np.mean(test_losses_ls)}')
     
-    folder = f'results/{DATASET_NAME}/ResNet'
+    folder = f'results/{DATASET_NAME}/FeedForward'
     os.makedirs(folder, exist_ok=True)
     torch.save(trained_net.state_dict(), f'{folder}/model_rs{RANDOM_SEED}_ts{test_size}.pth')
     np.save(f'{folder}/last_train_losses_rs{RANDOM_SEED}_ts{test_size}.npy',
@@ -167,7 +167,7 @@ def run_pipeline(rnd_seed=RANDOM_SEED, test_size=TEST_SIZE, max_distance=None):
     np.save(f'{folder}/results_rs{RANDOM_SEED}_ts{test_size}.npy',
             np.array([np.mean(train_losses_ls), np.mean(test_losses_ls)]))
     
-    folder = f'imgs/model_performance/{DATASET_NAME}/ResNet'
+    folder = f'imgs/model_performance/{DATASET_NAME}/FeedForward'
     os.makedirs(folder, exist_ok=True)
     sns.lineplot(data=mean_train_losses, palette='orange', label='train set')
     sns.lineplot(data=mean_test_losses, palette='orange', label='test set')

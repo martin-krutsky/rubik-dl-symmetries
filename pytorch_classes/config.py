@@ -50,7 +50,6 @@ MAX_DISTANCE = 6
 DATASET_NAME = '6moves'  # 5moves/6moves/kociemba
 # 5_moves_dataset_single.pkl/6_moves_dataset_single.csv/kociemba_dataset.csv
 DATASET_FILE = 'data/processed/6_moves_dataset_single.csv'
-DATASET_TYPE = 'csv'  # pkl/csv
 
 PRINT_EVERY = 100
 

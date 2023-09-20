@@ -186,12 +186,14 @@ def plot_histo(data: List[int], filename: str, visible_bins: int = 20):
     plt.close()
 
 
-def plot_distance_compressions(distance_all_acts: List[defaultdict[Any, List]], model_name: str):
+def plot_distance_compressions(distance_all_acts: List[defaultdict[Any, List]], model_name: str,
+                               distances: Optional[List[int]] = None):
     """
     Plot histograms of compression sizes 1. separately for each distance, 2. for all cubes.
     """
     all_compressions = []
-    for i in range(len(distance_all_acts)):
+    iterable = distances if distances is not None else range(len(distance_all_acts))
+    for i in iterable:
         dist_acts = distance_all_acts[i]
         act_class_compressions = list(map(len, dist_acts.values()))
         all_compressions += act_class_compressions

@@ -15,14 +15,9 @@ class FeedForward(nn.Module):
 
     def forward(self, states_nnet):
         x = states_nnet
-
-        # preprocess input
-        if self.one_hot_depth > 0:
-            x = F.one_hot(x.long(), self.one_hot_depth)
-            x = x.double()
-            x = x.view(-1, self.state_dim * self.one_hot_depth)
-        else:
-            x = x.double()
+        x = F.one_hot(x.long(), self.one_hot_depth)
+        x = x.double()
+        x = x.view(-1, self.state_dim * self.one_hot_depth)
 
         # first two hidden layers
         x = self.fc1(x)

@@ -4,22 +4,18 @@ import torch
 
 
 def seed_worker(worker_id: int):
-    '''
+    """
     Set random seed for DataLoader initialization
-    
-    :param int worker_id: id given by DataLoader
-    '''
+    """
     worker_seed = 123
     np.random.seed(worker_seed)
     random.seed(worker_seed)
     
 
 def seed_all(seed: int = 123):
-    '''
+    """
     Set random seeds (all of them) for PyTorch training and eval loop
-    
-    :param int seed: random seed
-    '''
+    """
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)

@@ -1,6 +1,5 @@
 from itertools import combinations
 import os
-from sys import getsizeof
 
 import numpy as np
 import pandas as pd
@@ -9,7 +8,7 @@ from tqdm import tqdm
 from .symmetry_config import *
 
 middle_indices = [4 + i * 9 for i in range(6)]
-edge_indices = [i for i in range(54) if (((i % 9) % 2) == 0)  and ((i % 9) != 4)]
+edge_indices = [i for i in range(54) if (((i % 9) % 2) == 0) and ((i % 9) != 4)]
 corner_indices = [i for i in range(54) if (((i % 9) % 2) == 1)]
 
 
@@ -66,7 +65,7 @@ def assign_symmetry_classes(folder, filename, middle_idx_nr):
         frozen_color_hash = hash(frozen_color_list)
         if frozen_color_hash not in hashset:
             all_symmetric = generate_all_symmetric(color_list)
-            for i, sym in enumerate(all_symmetric): 
+            for j, sym in enumerate(all_symmetric):
                 sym_hash = hash(sym)
                 if middle_index in sym:
                     hashset.add(sym_hash)

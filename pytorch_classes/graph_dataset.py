@@ -17,7 +17,7 @@ def indices_to_position(indices):
 def calc_distances(filtered_indices):
     vertices = indices_to_position(filtered_indices)
     dist_mat = distance_matrix(vertices, vertices)
-#     dist_mat = np.rint(dist_mat*10e4).astype(int)
+    # dist_mat = np.rint(dist_mat*10e4).astype(int)
     return dist_mat
 
 
@@ -39,9 +39,8 @@ def create_complete_graph_data_obj(colors, distance_from_goal, node_features_siz
         curr_idx += len(filtered_indices)
     y = distance_from_goal
     node_features = np.sort(node_features, axis=1)
-    data = Data(x=torch.tensor(node_features).double(), edge_index=torch.tensor(edge_index).T.long() , edge_attr=torch.tensor(edge_attr).double().unsqueeze(1), y=torch.Tensor([y]))
-#     transform = T.NormalizeFeatures(attrs=['x', 'edge_attr'])
-#     data = transform(data)
+    data = Data(x=torch.tensor(node_features).double(), edge_index=torch.tensor(edge_index).T.long(),
+                edge_attr=torch.tensor(edge_attr).double().unsqueeze(1), y=torch.tensor([y]))
     return data
 
 

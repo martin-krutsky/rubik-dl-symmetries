@@ -14,10 +14,7 @@ class ResNet(nn.Module):
         self.batch_norm = batch_norm
 
         # first two hidden layers
-        if one_hot_depth > 0:
-            self.fc1 = nn.Linear(self.state_dim * self.one_hot_depth, h1_dim)
-        else:
-            self.fc1 = nn.Linear(self.state_dim, h1_dim)
+        self.fc1 = nn.Linear(self.state_dim * self.one_hot_depth, h1_dim)
 
         if self.batch_norm:
             self.bn1 = nn.BatchNorm1d(h1_dim)

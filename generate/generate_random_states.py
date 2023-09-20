@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Any
 from random import randrange
 
 import numpy as np
@@ -7,14 +7,17 @@ from classes.cube_classes import Cube3State, Cube3
 from .generate_states import move_index_to_char
 
 
-def generate_random_states_and_generators(num_states: int, backwards_range: Tuple[int, int]) -> Tuple[List[List[str]], List[int]]:
-    '''
-    Generate `num_states` of states, by performing random scrambles on the solved states, where the number of scrambles is in the `backwards_range`, inclusive. 
-    The resulting distribution is biased towards states closer to the solved state, as we use distribution uniform w.r.t. that distance,
-    but there are less unique states as we get closer to the solution (the state space is a tree with root in the solved state)
-    
+def generate_random_states_and_generators(
+        num_states: int, backwards_range: Tuple[int, int]
+) -> Tuple[List[Cube3State], List[int], List[List[Any]]]:
+    """
+    Generate `num_states` of states, by performing random scrambles on the solved states, where the number of scrambles
+    is in the `backwards_range`, inclusive. The resulting distribution is biased towards states closer to the solved
+    state, as we use distribution uniform w.r.t. that distance, but there are less unique states as we get closer to
+    the solution (the state space is a tree with root in the solved state).
+
     The code is taken (and adjusted) from the https://github.com/forestagostinelli/DeepCubeA repository
-    '''
+    """
     # Initialize
     cube = Cube3()
     scrambs: List[int] = list(range(backwards_range[0], backwards_range[1] + 1))

@@ -1,6 +1,6 @@
 from pytorch_classes.training_runner import TrainingRunner
 from pytorch_classes.feedforward_model import FeedForward
-from pytorch_classes.resnet_dataset import ResNetDataset
+from pytorch_classes.color_dataset import ColorDataset
 from pytorch_classes.config import *
 
 import sys
@@ -18,7 +18,7 @@ class FeedForwardTrainingRunner(TrainingRunner):
         )
 
     def create_data_container(self, data, labels):
-        return ResNetDataset(data, labels)
+        return ColorDataset(data, labels)
 
 
 if __name__ == '__main__':

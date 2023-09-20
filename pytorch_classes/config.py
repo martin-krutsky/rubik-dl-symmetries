@@ -2,8 +2,8 @@ import numpy as np
 
 
 NR_OF_RND_SEEDS = 10
-CONFIGS = [(rnd_seed, test_size) for rnd_seed in range(0, NR_OF_RND_SEEDS) for test_size in [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]]
-
+TEST_SIZES = np.arange(0.0, 1.0, 0.1)
+CONFIGS = [(rnd_seed, test_size) for rnd_seed in range(0, NR_OF_RND_SEEDS) for test_size in TEST_SIZES]
 
 NR_OF_EPOCHS = 50
 VERBOSE = True
@@ -45,7 +45,6 @@ FEEDFORWARD_HYPERPARAMS = {
 
 LEARNING_RATE = 0.001
 
-
 MAX_DISTANCE = 6
 DATASET_NAME = '6moves'  # 5moves/6moves/kociemba
 # 5_moves_dataset_single.pkl/6_moves_dataset_single.csv/kociemba_dataset.csv
@@ -54,26 +53,32 @@ DATASET_FILE = 'data/processed/6_moves_dataset_single.csv'
 PRINT_EVERY = 100
 
 POS_ARRAY = np.array([
+    # 1
     [0.5, 0.5, 0], [1.5, 0.5, 0], [2.5, 0.5, 0],
     [0.5, 1.5, 0], [1.5, 1.5, 0], [2.5, 1.5, 0],
     [0.5, 2.5, 0], [1.5, 2.5, 0], [2.5, 2.5, 0],
 
+    # 2
     [2.5, 0.5, 3], [1.5, 0.5, 3], [0.5, 0.5, 3],
     [2.5, 1.5, 3], [1.5, 1.5, 3], [0.5, 1.5, 3],
     [2.5, 2.5, 3], [1.5, 2.5, 3], [0.5, 2.5, 3],
 
+    # 3
     [2.5, 0, 2.5], [2.5, 0, 1.5], [2.5, 0, 0.5],
     [1.5, 0, 2.5], [1.5, 0, 1.5], [1.5, 0, 0.5],
     [0.5, 0, 2.5], [0.5, 0, 1.5], [0.5, 0, 0.5],
 
+    # 4
     [0.5, 3, 2.5], [0.5, 3, 1.5], [0.5, 3, 0.5],
     [1.5, 3, 2.5], [1.5, 3, 1.5], [1.5, 3, 0.5],
     [2.5, 3, 2.5], [2.5, 3, 1.5], [2.5, 3, 0.5],
 
+    # 5
     [3, 2.5, 2.5], [3, 2.5, 1.5], [3, 2.5, 0.5],
     [3, 1.5, 2.5], [3, 1.5, 1.5], [3, 1.5, 0.5],
     [3, 0.5, 2.5], [3, 0.5, 1.5], [3, 0.5, 0.5],
 
+    # 6
     [0, 0.5, 2.5], [0, 0.5, 1.5], [0, 0.5, 0.5],
     [0, 1.5, 2.5], [0, 1.5, 1.5], [0, 1.5, 0.5],
     [0, 2.5, 2.5], [0, 2.5, 1.5], [0, 2.5, 0.5],

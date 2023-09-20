@@ -1,7 +1,7 @@
 import torch
 
 
-class ResNetDataset(torch.utils.data.Dataset):
+class ColorDataset(torch.utils.data.Dataset):
     """Rubik's Cube dataset."""
     def __init__(self, color_list, label_list):
         self.color_list = torch.Tensor(color_list).double()

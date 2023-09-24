@@ -129,7 +129,7 @@ class TrainingRunner(ABC):
             max_loss = 0.0
             train_losses_ls = []
             for i, data in tqdm(enumerate(trainloader)):
-                inputs, labels = data
+                inputs, labels = self.split_input_labels(data)
 
                 # zero the parameter gradients
                 optimizer.zero_grad()

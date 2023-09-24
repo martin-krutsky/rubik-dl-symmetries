@@ -2,7 +2,7 @@ import numpy as np
 
 
 NR_OF_RND_SEEDS = 10
-TEST_SIZES = np.arange(0.0, 1.0, 0.1)
+TEST_SIZES = np.arange(0.1, 1.0, 0.1)
 CONFIGS = [(rnd_seed, test_size) for rnd_seed in range(0, NR_OF_RND_SEEDS) for test_size in TEST_SIZES]
 
 NR_OF_EPOCHS = 50

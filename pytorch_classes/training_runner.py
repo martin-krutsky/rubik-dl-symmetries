@@ -56,9 +56,13 @@ class TrainingRunner(ABC):
     def create_data_container(self, data, labels):
         pass
 
-    @abstractmethod
     def create_data_loader(self, training_set, test_set):
-        pass
+        trainloader = torch.utils.data.DataLoader(training_set, **self.loader_params)
+        if self.test_size == 0:
+            testloader = None
+        else:
+            testloader = torch.utils.data.DataLoader(test_set, **self.loader_params)
+        return trainloader, testloader
 
     def prepare_data(self):
         df = self.load_data()
@@ -83,6 +87,10 @@ class TrainingRunner(ABC):
         trainloader, testloader = self.create_data_loader(training_set, test_set)
         return trainloader, testloader
 
+    @staticmethod
+    def split_input_labels(data):
+        return data[0], data[1]
+
     def evaluate(self, data_loader, criterion):
         self.model.eval()
         if data_loader is None:
@@ -90,7 +98,7 @@ class TrainingRunner(ABC):
         test_losses = []
         for data in tqdm(data_loader):
             with torch.no_grad():
-                inputs, labels = data
+                inputs, labels = self.split_input_labels(data)
                 outputs = self.model(inputs)
                 losses = criterion(torch.squeeze(outputs), labels.float())
                 test_losses += losses.tolist()

@@ -29,6 +29,10 @@ class SymEqNetTrainingRunner(TrainingRunner):
             testloader = DataLoader(test_set, **self.loader_params)
         return trainloader, testloader
 
+    @staticmethod
+    def split_input_labels(data):
+        return data, data.y.squeeze()
+
 
 if __name__ == '__main__':
     if len(sys.argv) >= 2 and sys.argv[1].isdigit():

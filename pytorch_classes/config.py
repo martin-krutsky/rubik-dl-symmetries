@@ -14,25 +14,27 @@ SYMEQNET_LOADER_PARAMS = {
     'shuffle': True,
     'num_workers': 0,
 }
-SYMEQNET_HYPERPARAMS = {
-    'hidden_graph_channels': 100,
-    'hidden_lin_channels': 100,
-    'num_resnet_blocks': 0,
-    'batch_norm': False
-}
-
 RESNET_LOADER_PARAMS = {
     'batch_size': 1024,
     'shuffle': True,
     'num_workers': 8,
 }
 STATE_DIM = (CUBE_SIDE_SIZE ** 2) * 6
+
+
+SYMEQNET_HYPERPARAMS = {
+    'hidden_graph_channels': 100,
+    'hidden_lin_channels': 100,
+    'num_resnet_blocks': 2,
+    'batch_norm': True
+}
+
 RESNET_HYPERPARAMS = {
     'state_dim': STATE_DIM,
     'one_hot_depth': 6,
-    'h1_dim': 5000,
-    'resnet_dim': 1000,
-    'num_resnet_blocks': 4,
+    'h1_dim': 100,
+    'resnet_dim': 100,
+    'num_resnet_blocks': 2,
     'out_dim': 1, 
     'batch_norm': True
 }
@@ -45,10 +47,10 @@ FEEDFORWARD_HYPERPARAMS = {
 
 LEARNING_RATE = 0.001
 
-MAX_DISTANCE = 6
-DATASET_NAME = '6moves'  # 5moves/6moves/kociemba
+MAX_DISTANCE = 2
+DATASET_NAME = '5moves'  # 5moves/6moves/kociemba
 # 5_moves_dataset_single.pkl/6_moves_dataset_single.csv/kociemba_dataset.csv
-DATASET_FILE = 'data/processed/6_moves_dataset_single.csv'
+DATASET_FILE = 'data/processed/5_moves_dataset_single.pkl'
 
 PRINT_EVERY = 100
 

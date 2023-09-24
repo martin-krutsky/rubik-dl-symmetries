@@ -6,6 +6,7 @@ from pytorch_classes.config import *
 import sys
 
 import torch
+from torch_geometric.loader import DataLoader
 torch.set_default_dtype(torch.float64)
 
 
@@ -19,6 +20,14 @@ class SymEqNetTrainingRunner(TrainingRunner):
 
     def create_data_container(self, data, labels):
         return create_data_list(data, labels)
+
+    def create_data_loader(self, training_set, test_set):
+        trainloader = DataLoader(training_set, **self.loader_params)
+        if self.test_size == 0:
+            testloader = None
+        else:
+            testloader = DataLoader(test_set, **self.loader_params)
+        return trainloader, testloader
 
 
 if __name__ == '__main__':

@@ -20,6 +20,14 @@ class FeedForwardTrainingRunner(TrainingRunner):
     def create_data_container(self, data, labels):
         return ColorDataset(data, labels)
 
+    def create_data_loader(self, training_set, test_set):
+        trainloader = torch.utils.data.DataLoader(training_set, **self.loader_params)
+        if self.test_size == 0:
+            testloader = None
+        else:
+            testloader = torch.utils.data.DataLoader(test_set, **self.loader_params)
+        return trainloader, testloader
+
 
 if __name__ == '__main__':
     if len(sys.argv) >= 2 and sys.argv[1].isdigit():

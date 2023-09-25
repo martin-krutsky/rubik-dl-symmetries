@@ -180,7 +180,7 @@ class TrainingRunner(ABC):
 
         folder = f'results/{self.dataset_name}/{self.model_name}'
         os.makedirs(folder, exist_ok=True)
-        rnd_test_size_suffix = f'rs{self.random_seed}_ts{self.test_size}'
+        rnd_test_size_suffix = f'rs{self.random_seed}_ts{self.test_size:0.1f}'
         torch.save(self.model.state_dict(), f'{folder}/model_{rnd_test_size_suffix}.pth')
         np.save(f'{folder}/last_train_losses_{rnd_test_size_suffix}.npy',
                 train_losses_ls)
@@ -199,7 +199,7 @@ class TrainingRunner(ABC):
         sns.lineplot(data=mean_test_losses, palette='orange', label='test set')
         plt.xlabel("Epoch")
         plt.ylabel("Mean absolute error")
-        plt.title(f"ResNet convergence plot, random seed {self.random_seed}, test size {self.test_size}")
+        plt.title(f"ResNet convergence plot, random seed {self.random_seed}, test size {self.test_size:0.1f}")
         plt.legend()
         plt.savefig(f'{folder}/convergence_{rnd_test_size_suffix}.png')
         plt.clf()

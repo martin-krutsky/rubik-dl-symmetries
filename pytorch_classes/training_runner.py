@@ -1,5 +1,5 @@
 from utils.random_seed import seed_worker, seed_all, init_weights
-from pytorch_classes.config import CONFIGS
+from pytorch_classes.config import CONFIGS, TRAIN_TEST_SPLIT_TYPE
 
 from abc import ABC, abstractmethod
 import ast
@@ -29,6 +29,7 @@ class TrainingRunner(ABC):
         self.config = CONFIGS[config_nr]
         self.random_seed = self.config[0]
         self.test_size = self.config[1]
+        self.train_test_split_type = TRAIN_TEST_SPLIT_TYPE
         self.loader_params = loader_params
         self.loader_params['worker_init_fn'] = seed_worker
         self.dataset_name = dataset_name
@@ -72,10 +73,17 @@ class TrainingRunner(ABC):
 
         dataset = df['colors'].tolist()
         targets = df['distance'].tolist()
+        classes = df['class_id'].tolist()
+        dataset_size = len(df.index)
 
         if self.test_size == 0:
             x_train, x_test, y_train, y_test = dataset, [], targets, []
-        else:
+        elif self.train_test_split_type == 'adversarial':
+            x_train, x_test, y_train, y_test = train_test_split(
+                dataset, targets, stratify=classes, test_size=int(round(self.test_size * dataset_size / 48)),
+                random_state=self.random_seed
+            )
+        elif self.train_test_split_type == 'ratio':
             x_train, x_test, y_train, y_test = train_test_split(
                 dataset, targets, stratify=targets, test_size=self.test_size, random_state=self.random_seed
             )
@@ -193,13 +201,13 @@ class TrainingRunner(ABC):
         np.save(f'{folder}/results_{rnd_test_size_suffix}.npy',
                 np.array([np.mean(train_losses_ls), np.mean(test_losses_ls)]))
 
-        folder = f'imgs/model_performance/{self.dataset_name}/ResNet'
+        folder = f'imgs/model_performance/{self.dataset_name}/{self.model_name}'
         os.makedirs(folder, exist_ok=True)
         sns.lineplot(data=mean_train_losses, palette='orange', label='train set')
         sns.lineplot(data=mean_test_losses, palette='orange', label='test set')
         plt.xlabel("Epoch")
         plt.ylabel("Mean absolute error")
-        plt.title(f"ResNet convergence plot, random seed {self.random_seed}, test size {self.test_size:0.1f}")
+        plt.title(f"{self.model_name} convergence plot, random seed {self.random_seed}, test size {self.test_size:0.1f}")
         plt.legend()
         plt.savefig(f'{folder}/convergence_{rnd_test_size_suffix}.png')
         plt.clf()

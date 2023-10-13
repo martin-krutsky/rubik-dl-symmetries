@@ -10,7 +10,25 @@ class SymEqNet(torch.nn.Module):
         super(SymEqNet, self).__init__()
         self.num_resnet_blocks = num_resnet_blocks
         self.batch_norm = batch_norm
-        self.conv1 = gnn.GATConv(in_channels=node_features_size, out_channels=hidden_graph_channels, edge_dim=1)
+        # GATConv, PNAConv, GeneralConv, TransformerConv, GATv2Conv
+
+        # self.conv1 = gnn.GATConv(in_channels=node_features_size, out_channels=hidden_graph_channels, edge_dim=1)
+
+        aggregators = ['mean', 'min', 'max', 'std']
+        scalers = ['identity', 'amplification', 'attenuation']
+        deg = torch.tensor([0, 0, 0, 0, 0, 0, 0, 0, 1])
+        self.conv1 = gnn.PNAConv(in_channels=node_features_size, out_channels=hidden_graph_channels, edge_dim=1,
+                                 aggregators=aggregators, scalers=scalers, deg=deg)
+
+        # self.conv1 = gnn.GeneralConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
+        #                              in_edge_channels=1)
+
+        # self.conv1 = gnn.TransformerConv(in_channels=node_features_size, out_channels=hidden_graph_channels, heads=1,
+        #                                  edge_dim=1)
+
+        # self.conv1 = gnn.GATv2Conv(in_channels=node_features_size, out_channels=hidden_graph_channels, heads=1,
+        #                            edge_dim=1)
+
         if self.batch_norm:
             self.bn1 = nn.BatchNorm1d(hidden_graph_channels)
         self.fc2 = nn.Linear(hidden_graph_channels, hidden_lin_channels)

@@ -2,7 +2,11 @@ import numpy as np
 
 
 NR_OF_RND_SEEDS = 10
-TEST_SIZES = np.arange(0.1, 1.0, 0.1)
+TRAIN_TEST_SPLIT_TYPE = 'adversarial'  # ratio / adversarial
+if TRAIN_TEST_SPLIT_TYPE == 'ratio':
+    TEST_SIZES = np.arange(0.1, 1.0, 0.1)
+elif TRAIN_TEST_SPLIT_TYPE == 'adversarial':
+    TEST_SIZES = [48 - i for i in range(1, 11)]
 CONFIGS = [(rnd_seed, test_size) for rnd_seed in range(0, NR_OF_RND_SEEDS) for test_size in TEST_SIZES]
 
 NR_OF_EPOCHS = 50
@@ -45,12 +49,16 @@ FEEDFORWARD_HYPERPARAMS = {
     'out_dim': 1, 
 }
 
+RESNET_MODEL_NAME = 'ResNet'
+FEEDFORWARD_MODEL_NAME = 'FeedForward'
+SYMEQNET_MODEL_NAME = 'SymEqNet_Transformer'
+
 LEARNING_RATE = 0.001
 
-MAX_DISTANCE = 2
-DATASET_NAME = '5moves'  # 5moves/6moves/kociemba
+MAX_DISTANCE = None
+DATASET_NAME = 'kociemba'  # 5moves/6moves/kociemba
 # 5_moves_dataset_single.pkl/6_moves_dataset_single.csv/kociemba_dataset.csv
-DATASET_FILE = 'data/processed/5_moves_dataset_single.pkl'
+DATASET_FILE = 'data/processed/kociemba_dataset.csv'
 
 PRINT_EVERY = 100
 

@@ -6,28 +6,33 @@ from torch_geometric.nn.pool import global_mean_pool
 
 
 class SymEqNet(torch.nn.Module):
-    def __init__(self, node_features_size=9, hidden_graph_channels=10, hidden_lin_channels=10, num_resnet_blocks=1, batch_norm=True):
+    def __init__(self, gnn_layer_class='GATv2Conv', node_features_size=9, hidden_graph_channels=10,
+                 hidden_lin_channels=10, num_resnet_blocks=1, batch_norm=True, heads=1):
         super(SymEqNet, self).__init__()
         self.num_resnet_blocks = num_resnet_blocks
         self.batch_norm = batch_norm
+
         # GATConv, PNAConv, GeneralConv, TransformerConv, GATv2Conv
-
-        # self.conv1 = gnn.GATConv(in_channels=node_features_size, out_channels=hidden_graph_channels, edge_dim=1)
-
-        aggregators = ['mean', 'min', 'max', 'std']
-        scalers = ['identity', 'amplification', 'attenuation']
-        deg = torch.tensor([0, 0, 0, 0, 0, 0, 0, 0, 1])
-        self.conv1 = gnn.PNAConv(in_channels=node_features_size, out_channels=hidden_graph_channels, edge_dim=1,
-                                 aggregators=aggregators, scalers=scalers, deg=deg)
-
-        # self.conv1 = gnn.GeneralConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
-        #                              in_edge_channels=1)
-
-        # self.conv1 = gnn.TransformerConv(in_channels=node_features_size, out_channels=hidden_graph_channels, heads=1,
-        #                                  edge_dim=1)
-
-        # self.conv1 = gnn.GATv2Conv(in_channels=node_features_size, out_channels=hidden_graph_channels, heads=1,
-        #                            edge_dim=1)
+        if gnn_layer_class == 'GATConv':
+            self.conv1 = gnn.GATConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
+                                     heads=heads, edge_dim=1)
+        elif gnn_layer_class == 'PNAConv':
+            aggregators = ['mean', 'min', 'max', 'std']
+            scalers = ['identity', 'amplification', 'attenuation']
+            deg = torch.tensor([0, 0, 0, 0, 0, 0, 0, 0, 1])
+            self.conv1 = gnn.PNAConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
+                                     towers=heads, edge_dim=1, aggregators=aggregators, scalers=scalers, deg=deg)
+        elif gnn_layer_class == 'GeneralConv':
+            self.conv1 = gnn.GeneralConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
+                                         heads=heads, in_edge_channels=1)
+        elif gnn_layer_class == 'TransformerConv':
+            self.conv1 = gnn.TransformerConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
+                                             heads=heads, edge_dim=1)
+        elif gnn_layer_class == 'GATv2Conv':
+            self.conv1 = gnn.GATv2Conv(in_channels=node_features_size, out_channels=hidden_graph_channels,
+                                       heads=heads, edge_dim=1)
+        else:
+            raise Exception('Unsupported GNN layer name!')
 
         if self.batch_norm:
             self.bn1 = nn.BatchNorm1d(hidden_graph_channels)
@@ -50,7 +55,7 @@ class SymEqNet(torch.nn.Module):
                     self.blocks.append(nn.ModuleList([res_fc1, res_fc2]))
                     
         else:
-            self.fc3 = nn.Linear(hidden_lin_channels)
+            self.fc3 = nn.Linear(hidden_lin_channels, hidden_lin_channels)
             if self.batch_norm:
                 self.bn3 = nn.BatchNorm1d(hidden_lin_channels)
         
@@ -73,17 +78,23 @@ class SymEqNet(torch.nn.Module):
         if self.num_resnet_blocks > 0:
             for block_num in range(self.num_resnet_blocks):
                 res_input = x
-                x = self.blocks[block_num][0](x)
-                x = self.blocks[block_num][1](x)
-                x = F.relu(x)
-                x = self.blocks[block_num][2](x)
-                x = self.blocks[block_num][3](x)
-                x = F.relu(x + res_input)
+                if self.batch_norm:
+                    x = self.blocks[block_num][0](x)
+                    x = self.blocks[block_num][1](x)
+                    x = F.relu(x)
+                    x = self.blocks[block_num][2](x)
+                    x = self.blocks[block_num][3](x)
+                    x = F.relu(x + res_input)
+                else:
+                    x = self.blocks[block_num][0](x)
+                    x = F.relu(x)
+                    x = self.blocks[block_num][1](x)
+                    x = F.relu(x + res_input)
         else:
             x = self.fc3(x)
             if self.batch_norm:
                 x = self.bn3(x)
-            x = self.relu(x)
+            x = F.relu(x)
         
         x = self.fc_out(x)
         return x

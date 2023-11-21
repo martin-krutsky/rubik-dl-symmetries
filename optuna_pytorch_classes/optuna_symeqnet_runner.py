@@ -141,9 +141,4 @@ def run():
 
 
 if __name__ == '__main__':
-    if len(sys.argv) >= 2 and sys.argv[1].isdigit():
-        config_number = int(sys.argv[1])
-    else:
-        config_number = 0
-
     run()

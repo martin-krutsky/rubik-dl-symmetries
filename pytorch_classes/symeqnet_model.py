@@ -7,32 +7,31 @@ from torch_geometric.nn.pool import global_mean_pool
 
 class SymEqNet(torch.nn.Module):
     def __init__(self, gnn_layer_class='GATv2Conv', node_features_size=9, hidden_graph_channels=10,
-                 hidden_lin_channels=10, num_resnet_blocks=1, batch_norm=True, heads=1):
+                 hidden_lin_channels=10, num_resnet_blocks=1, batch_norm=True, other_kwds=None):
         super(SymEqNet, self).__init__()
+        if other_kwds is None:
+            other_kwds = {}
         self.num_resnet_blocks = num_resnet_blocks
         self.batch_norm = batch_norm
 
         # GATConv, PNAConv, GeneralConv, TransformerConv, GATv2Conv
         if gnn_layer_class == 'GATConv':
             self.conv1 = gnn.GATConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
-                                     heads=heads, edge_dim=1)
+                                     edge_dim=1, **other_kwds)
         elif gnn_layer_class == 'PNAConv':
-            aggregators = ['mean', 'min', 'max', 'std']
-            scalers = ['identity', 'amplification', 'attenuation']
-            deg = torch.tensor([0, 0, 0, 0, 0, 0, 0, 0, 1])
             self.conv1 = gnn.PNAConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
-                                     towers=heads, edge_dim=1, aggregators=aggregators, scalers=scalers, deg=deg)
+                                     edge_dim=1, **other_kwds)
         elif gnn_layer_class == 'GeneralConv':
             self.conv1 = gnn.GeneralConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
-                                         heads=heads, in_edge_channels=1)
+                                         in_edge_channels=1, **other_kwds)
         elif gnn_layer_class == 'TransformerConv':
             self.conv1 = gnn.TransformerConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
-                                             heads=heads, edge_dim=1)
+                                             edge_dim=1, **other_kwds)
         elif gnn_layer_class == 'GATv2Conv':
             self.conv1 = gnn.GATv2Conv(in_channels=node_features_size, out_channels=hidden_graph_channels,
-                                       heads=heads, edge_dim=1)
+                                       edge_dim=1, **other_kwds)
         else:
-            raise Exception('Unsupported GNN layer name!')
+            raise Exception(f'Unsupported GNN layer ({gnn_layer_class}) name!')
 
         if self.batch_norm:
             self.bn1 = nn.BatchNorm1d(hidden_graph_channels)

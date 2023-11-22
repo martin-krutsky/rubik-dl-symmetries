@@ -1,3 +1,4 @@
+from utils.random_seed import seed_all
 from pytorch_classes.symeqnet_model import SymEqNet
 from pytorch_classes.symeqnet_runner import SymEqNetTrainingRunner
 from pytorch_classes.config import *
@@ -25,19 +26,39 @@ def define_model(trial: optuna.Trial):
         'gnn_layer_class', ['PNAConv', 'GeneralConv', 'GATv2Conv']  # TransformerConv
     )
     # print(f'GNN layer class: {gnn_layer_class}')
-
     graph_channels = trial.suggest_int('n_graph_channels', 50, 500, 50)
     # print(f'Nr of graph output channels: {gnn_layer_class}')
-
-    # heads = trial.suggest_categorical('n_heads_towers', [1, 2, 5])
-    heads = 1
-    # print(heads)
     hidden_layer_neurons = trial.suggest_int('n_hidden_neurons', 50, 500, 50)
     # print(f'Nr of hidden layer neurons: {hidden_layer_neurons}')
 
+    other_kwds = {}
+    if gnn_layer_class == 'PNAConv':
+        other_kwds['aggregators'] = ['mean', 'min', 'max', 'std']
+        other_kwds['scalers'] = ['identity', 'amplification', 'attenuation']
+        other_kwds['deg'] = torch.tensor([0, 0, 0, 0, 0, 0, 0, 0, 1])
+        other_kwds['towers'] = trial.suggest_categorical('n_heads', [1, 2, 5])
+        other_kwds['pre_layers'] = trial.suggest_int('pre_layers', 1, 4)
+        other_kwds['post_layers'] = trial.suggest_int('post_layers', 1, 4)
+    elif gnn_layer_class == 'GeneralConv':
+        other_kwds['aggr'] = trial.suggest_categorical('n_heads', ["add", "mean", "max"])
+        other_kwds['skip_linear'] = trial.suggest_categorical('skip_linear', [True, False])
+        other_kwds['heads'] = trial.suggest_int('n_heads', 1, 5)
+        other_kwds['attention'] = trial.suggest_categorical('attention', [True, False])
+        if other_kwds['attention']:
+            other_kwds['attention_type'] = trial.suggest_categorical('attention_type', ["additive", "dot_product"])
+        other_kwds['l2_normalize'] = trial.suggest_categorical('l2_normalize', [True, False])
+    elif gnn_layer_class == 'GATv2Conv':
+        other_kwds['heads'] = trial.suggest_int('n_heads', 1, 5)
+        other_kwds['concat'] = trial.suggest_categorical('concat', [True, False])
+        other_kwds['negative_slope '] = trial.suggest_float('negative_slope', 0, 0.3)
+        other_kwds['dropout'] = trial.suggest_float('dropout', 0, 0.5)
+        other_kwds['share_weights'] = trial.suggest_categorical('share_weights', [True, False])
+    else:
+        raise Exception(f'Unsupported GNN layer ({gnn_layer_class}) for hyperparameter choice!')
+
     return SymEqNet(gnn_layer_class=gnn_layer_class, hidden_graph_channels=graph_channels,
                     hidden_lin_channels=hidden_layer_neurons, num_resnet_blocks=num_resnet_blocks,
-                    batch_norm=batch_norm, heads=heads)
+                    batch_norm=batch_norm, other_kwds=other_kwds)
 
 
 def objective(trial: optuna.Trial, runner, trainloader, testloader):

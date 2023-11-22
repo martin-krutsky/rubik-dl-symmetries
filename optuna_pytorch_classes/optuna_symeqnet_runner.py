@@ -36,19 +36,19 @@ def define_model(trial: optuna.Trial):
         other_kwds['aggregators'] = ['mean', 'min', 'max', 'std']
         other_kwds['scalers'] = ['identity', 'amplification', 'attenuation']
         other_kwds['deg'] = torch.tensor([0, 0, 0, 0, 0, 0, 0, 0, 1])
-        other_kwds['towers'] = trial.suggest_categorical('n_heads', [1, 2, 5])
+        other_kwds['towers'] = trial.suggest_categorical('towers', [1, 2, 5])
         other_kwds['pre_layers'] = trial.suggest_int('pre_layers', 1, 4)
         other_kwds['post_layers'] = trial.suggest_int('post_layers', 1, 4)
     elif gnn_layer_class == 'GeneralConv':
-        other_kwds['aggr'] = trial.suggest_categorical('n_heads', ["add", "mean", "max"])
+        other_kwds['aggr'] = trial.suggest_categorical('aggr', ["add", "mean", "max"])
         other_kwds['skip_linear'] = trial.suggest_categorical('skip_linear', [True, False])
-        other_kwds['heads'] = trial.suggest_int('n_heads', 1, 5)
+        other_kwds['heads'] = trial.suggest_int('heads', 1, 5)
         other_kwds['attention'] = trial.suggest_categorical('attention', [True, False])
         if other_kwds['attention']:
             other_kwds['attention_type'] = trial.suggest_categorical('attention_type', ["additive", "dot_product"])
         other_kwds['l2_normalize'] = trial.suggest_categorical('l2_normalize', [True, False])
     elif gnn_layer_class == 'GATv2Conv':
-        other_kwds['heads'] = trial.suggest_int('n_heads', 1, 5)
+        other_kwds['heads'] = trial.suggest_int('heads', 1, 5)
         other_kwds['concat'] = trial.suggest_categorical('concat', [True, False])
         other_kwds['negative_slope '] = trial.suggest_float('negative_slope', 0, 0.3)
         other_kwds['dropout'] = trial.suggest_float('dropout', 0, 0.5)

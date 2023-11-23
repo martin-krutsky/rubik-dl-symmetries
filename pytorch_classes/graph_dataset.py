@@ -46,6 +46,6 @@ def create_complete_graph_data_obj(colors, distance_from_goal, node_features_siz
 
 def create_data_list(colors_list, target_list):
     data_list_complete_graph = []
-    for colors, target in tqdm(zip(colors_list, target_list)):
+    for colors, target in tqdm(zip(colors_list, target_list), miniters=100):
         data_list_complete_graph.append(create_complete_graph_data_obj(colors, target))
     return data_list_complete_graph

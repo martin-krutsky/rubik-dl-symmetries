@@ -88,7 +88,7 @@ def objective(trial: optuna.Trial, runner, trainloader, testloader):
             running_loss = 0.0
             max_loss = 0.0
             train_losses_ls = []
-            for i, data in tqdm(enumerate(trainloader)):
+            for i, data in enumerate(trainloader):
                 inputs, labels = runner.split_input_labels(data)
 
                 # zero the parameter gradients
@@ -124,11 +124,12 @@ def objective(trial: optuna.Trial, runner, trainloader, testloader):
 
             if trial.should_prune():
                 raise optuna.exceptions.TrialPruned()
+    mlflow.end_run()
 
-        print(f'Average Train MAE After Training: {np.mean(train_losses_ls)}')
-        print(f'Average Test MAE After Training: {np.mean(test_losses_ls)}')
+    print(f'Average Train MAE After Training: {np.mean(train_losses_ls)}')
+    print(f'Average Test MAE After Training: {np.mean(test_losses_ls)}')
 
-        return np.mean(test_losses_ls)
+    return np.mean(test_losses_ls)
 
 
 def run():
@@ -141,7 +142,7 @@ def run():
     objective_partial = lambda trial: objective(trial, runner, trainloader, testloader)
     study = optuna.create_study(direction='minimize')
 
-    study.optimize(objective_partial, n_jobs=1, n_trials=100)
+    study.optimize(objective_partial, n_jobs=8, n_trials=1000)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])

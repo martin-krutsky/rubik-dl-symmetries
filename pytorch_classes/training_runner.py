@@ -104,7 +104,7 @@ class TrainingRunner(ABC):
         if data_loader is None:
             return None, None
         test_losses = []
-        for data in tqdm(data_loader):
+        for data in tqdm(data_loader, miniters=100):
             with torch.no_grad():
                 inputs, labels = self.split_input_labels(data)
                 outputs = self.model(inputs)
@@ -136,7 +136,7 @@ class TrainingRunner(ABC):
             running_loss = 0.0
             max_loss = 0.0
             train_losses_ls = []
-            for i, data in tqdm(enumerate(trainloader)):
+            for i, data in tqdm(enumerate(trainloader), miniters=100):
                 inputs, labels = self.split_input_labels(data)
 
                 # zero the parameter gradients

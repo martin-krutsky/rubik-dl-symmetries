@@ -2,41 +2,48 @@ import numpy as np
 
 
 NR_OF_RND_SEEDS = 10
-TRAIN_TEST_SPLIT_TYPE = 'ratio'  # ratio / adversarial
+TRAIN_TEST_SPLIT_TYPE = 'adversarial'  # ratio / adversarial
 if TRAIN_TEST_SPLIT_TYPE == 'ratio':
     TEST_SIZES = np.arange(0.1, 1.0, 0.1)
 elif TRAIN_TEST_SPLIT_TYPE == 'adversarial':
     TEST_SIZES = [48 - i for i in range(1, 11)]
 CONFIGS = [(rnd_seed, test_size) for rnd_seed in range(0, NR_OF_RND_SEEDS) for test_size in TEST_SIZES]
 
-NR_OF_EPOCHS = 10
+NR_OF_EPOCHS = 100
 VERBOSE = True
 CUBE_SIDE_SIZE = 3
 
-SYMEQNET_LOADER_PARAMS = {
+GRAPH_LOADER_PARAMS = {
     'batch_size': 1024,
     'shuffle': True,
     'num_workers': 0,
 }
-RESNET_LOADER_PARAMS = {
+COLOR_LOADER_PARAMS = {
     'batch_size': 1024,
     'shuffle': True,
-    'num_workers': 8,
+    'num_workers': 0,
 }
 STATE_DIM = (CUBE_SIDE_SIZE ** 2) * 6
 
 
+# SYMEQNET_HYPERPARAMS = {
+#     'hidden_graph_channels': 9,
+#     'hidden_lin_channels': 10,
+# }
+
 SYMEQNET_HYPERPARAMS = {
-    'hidden_graph_channels': 100,
-    'hidden_lin_channels': 100,
+    'hidden_graph_channels': 9,
+    'h1_dim': 500,
+    'resnet_dim': 100,
     'num_resnet_blocks': 2,
-    'batch_norm': True
+    'batch_norm': True,
+    'gnn_layer_class': 'SimpleConv'
 }
 
 RESNET_HYPERPARAMS = {
     'state_dim': STATE_DIM,
     'one_hot_depth': 6,
-    'h1_dim': 100,
+    'h1_dim': 500,
     'resnet_dim': 100,
     'num_resnet_blocks': 2,
     'out_dim': 1, 
@@ -45,20 +52,20 @@ RESNET_HYPERPARAMS = {
 FEEDFORWARD_HYPERPARAMS = {
     'state_dim': STATE_DIM,
     'one_hot_depth': 6,
-    'h_dim': 100,
+    'h_dim': 10,
     'out_dim': 1, 
 }
 
 RESNET_MODEL_NAME = 'ResNet'
 FEEDFORWARD_MODEL_NAME = 'FeedForward'
-SYMEQNET_MODEL_NAME = 'SymEqNet_Transformer'
+SYMEQNET_MODEL_NAME = 'GCNNet'
 
 LEARNING_RATE = 0.001
 
-MAX_DISTANCE = 3
-DATASET_NAME = '5moves'  # 5moves/6moves/kociemba
-# 5_moves_dataset_single.pkl/6_moves_dataset_single.csv/kociemba_dataset.csv
-DATASET_FILE = 'data/processed/5_moves_dataset_single.pkl'
+MAX_DISTANCE = None
+DATASET_NAME = 'kociemba10_dataset'  # 5moves/6moves/kociemba/kociemba10_dataset
+# 5_moves_dataset_single.pkl/6_moves_dataset_single.csv/kociemba_dataset.csv/kociemba1000_dataset.pkl
+DATASET_FILE = 'data/processed/kociemba10_dataset.pkl'
 
 PRINT_EVERY = 100
 

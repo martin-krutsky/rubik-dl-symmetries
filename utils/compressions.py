@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Callable, Dict, Set, Tuple, Type, Optional, Any
+from typing import List, Callable, DefaultDict, Dict, Set, Tuple, Type, Optional, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,8 +31,8 @@ def create_networks(
 
 
 def compress_for_color(
-        df: pd.DataFrame, input_handling_func: Callable, break_on_error: bool = True,
-        compression_dict: Dict[Tuple, Tuple] = None
+        df: pd.DataFrame, input_handling_func: Callable, break_on_error: bool = True, verbose: bool = True,
+        compression_dict: Dict[Tuple, Tuple] = None, hash_to_sizes = None
 ) -> Dict[Tuple, Tuple]:
     """
     Create a compression dictionary for a dataset of facelets corresponding to a single color in the Rubik's cube.
@@ -40,6 +40,7 @@ def compress_for_color(
     """
     if compression_dict is None:
         compression_dict = dict()
+        hash_to_sizes = defaultdict(list)
     for sym_class in tqdm(df.symmetry_class.unique()):
         df_filtered = df[df['symmetry_class'] == sym_class]
         indices = df_filtered['index']
@@ -52,23 +53,26 @@ def compress_for_color(
                 processed_data = hash(processed_data.tostring())
             sym_class_comp_set.add(processed_data)
         if len(sym_class_comp_set) > 1:
-            print('ERROR: Multiple hashes in a symmetry class', sym_class)
+            if verbose:
+                print('ERROR: Multiple hashes in a symmetry class', sym_class)
             if break_on_error:
                 break
 
         if processed_data in compression_dict:
-            print(f'ERROR: Same hashes ({processed_data}) for symmetry class', sym_class, 'and',
-                  compression_dict[processed_data])
+            if verbose:
+                print(f'ERROR: Same hashes ({processed_data}) for symmetry class', sym_class, 'and',
+                      compression_dict[processed_data])
             if break_on_error:
                 break
         compression_dict[processed_data] = sym_class
-    return compression_dict
+        hash_to_sizes[processed_data].append(len(indices))
+    return compression_dict, hash_to_sizes
 
 
 # --- COMPRESSION DICTIONARIES ---
 
 
-def create_dicts_from_data(df: pd.DataFrame, distance: int, input_handling_func: Callable) -> defaultdict[Tuple, List]:
+def create_dicts_from_data(df: pd.DataFrame, distance: int, input_handling_func: Callable) -> DefaultDict[Tuple, List]:
     """
     Use dataset of cube states and their generators to produce a dictionary of compression classes
     based on the processed data (e.g., volumes, distances, angles, etc.).
@@ -87,7 +91,7 @@ def create_dicts_from_data(df: pd.DataFrame, distance: int, input_handling_func:
 
 def calculate_all_dicts_from_data(
         df: pd.DataFrame, max_distance: int, input_handling_func: Callable
-) -> List[defaultdict[Tuple, List]]:
+) -> List[DefaultDict[Tuple, List]]:
     """
     Compute compression dictionaries for cubes with distance from goal in range between 1 and max_distance.
     """
@@ -99,7 +103,7 @@ def calculate_all_dicts_from_data(
 def create_dicts_from_activations(
         df: pd.DataFrame, distance: int, input_handling_func: Callable,
         networks: List[torch.nn.Module], is_graph_nn: bool = False, node_features_size=9
-) -> defaultdict[Tuple, List]:
+) -> DefaultDict[Tuple, List]:
     """
     Use dataset of cube states and their generators to produce a dictionary of compression classes
     based on forward activations of randomly initialized untrained neural networks.
@@ -129,7 +133,7 @@ def create_dicts_from_activations(
 def calculate_all_dicts_from_activations(
         df: pd.DataFrame, max_distance: Optional[int], input_handling_func: Callable,
         networks: List[torch.nn.Module], is_graph_nn: bool = False
-) -> List[defaultdict[Tuple, List]]:
+) -> List[DefaultDict[Tuple, List]]:
     """
     Compute compression dictionaries for cubes with distance from goal in range between 1 and max_distance.
     """
@@ -148,7 +152,7 @@ def calculate_all_dicts_from_activations(
 
 
 def compute_set_intersections(
-        distance_all_acts: List[defaultdict[Tuple, List]], distances: Optional[List[int]] = None
+        distance_all_acts: List[DefaultDict[Tuple, List]], distances: Optional[List[int]] = None
 ) -> Dict[Tuple, Set]:
     """
     Given compression dictionaries, calculate their possible intersection, i.e. the NN's inability
@@ -175,18 +179,22 @@ def plot_histo(data: List[int], filename: str, visible_bins: int = 20):
     """
     Plot a histogram of cube distributions.
     """
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(7, 4))
     nr_of_bins = max(data)
-    sns.histplot(data, bins=nr_of_bins)
-    x_ticks = [i for i in range(0, nr_of_bins + 2, max(nr_of_bins // visible_bins, 1))]
+    sns.histplot(data, bins=[i for i in range(50)])
+    x_ticks = [i for i in range(0, 52, 2)]
     plt.xticks(x_ticks)
+    plt.xlim((0,49))
+    plt.xlabel("Compression size",fontsize=12)
+    plt.ylabel("Count",fontsize=12)
 
-    plt.savefig(filename)
+    plt.savefig(f'{filename}.png', dpi=300)
+    plt.savefig(f'{filename}.pdf', format='pdf')
     plt.show()
     plt.close()
 
 
-def plot_distance_compressions(distance_all_acts: List[defaultdict[Any, List]], model_name: str,
+def plot_distance_compressions(distance_all_acts: List[DefaultDict[Any, List]], model_name: str,
                                distances: Optional[List[int]] = None):
     """
     Plot histograms of compression sizes 1. separately for each distance, 2. for all cubes.
@@ -202,7 +210,7 @@ def plot_distance_compressions(distance_all_acts: List[defaultdict[Any, List]], 
 
 
 def plot_class_ids_per_compressions(
-        distance_all_acts: List[defaultdict[float, List]], df: pd.DataFrame, model_name: str
+        distance_all_acts: List[DefaultDict[float, List]], df: pd.DataFrame, model_name: str
 ):
     """
     Plot histograms of ground-truth class ids per each compression class in distance_all_acts

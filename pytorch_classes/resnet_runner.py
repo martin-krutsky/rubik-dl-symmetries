@@ -29,6 +29,6 @@ if __name__ == '__main__':
 
     resnet_runner = ResNetTrainingRunner(
         RESNET_MODEL_NAME, RESNET_HYPERPARAMS, LEARNING_RATE, NR_OF_EPOCHS,
-        config_number, RESNET_LOADER_PARAMS, DATASET_NAME, DATASET_FILE, MAX_DISTANCE
+        config_number, COLOR_LOADER_PARAMS, DATASET_NAME, DATASET_FILE, MAX_DISTANCE
     )
     resnet_runner.run_pipeline(VERBOSE, PRINT_EVERY)

@@ -135,7 +135,7 @@ def objective(trial: optuna.Trial, runner, trainloader, testloader):
 def run():
     runner = SymEqNetTrainingRunner(
         SYMEQNET_MODEL_NAME, SYMEQNET_HYPERPARAMS, LEARNING_RATE, NR_OF_EPOCHS,
-        config_number, SYMEQNET_LOADER_PARAMS, DATASET_NAME, DATASET_FILE, MAX_DISTANCE
+        config_number, GRAPH_LOADER_PARAMS, DATASET_NAME, DATASET_FILE, MAX_DISTANCE
     )
     trainloader, testloader = runner.prepare_data()
 

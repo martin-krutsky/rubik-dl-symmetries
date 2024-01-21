@@ -109,7 +109,10 @@ class TrainingRunner(ABC):
                 inputs, labels = self.split_input_labels(data)
                 outputs = self.model(inputs)
                 losses = criterion(torch.squeeze(outputs), labels.float())
-                test_losses += losses.tolist()
+                if losses.dim() > 0:
+                    test_losses += losses.tolist()
+                else:
+                    test_losses.append(losses.item())
         mean_test_loss = np.mean(test_losses)
         return test_losses, mean_test_loss
 
@@ -176,16 +179,8 @@ class TrainingRunner(ABC):
                 outputs = self.model(x)
                 predictions.append(torch.squeeze(outputs))
         return predictions
-
-    def run_pipeline(self, verbose, print_every):
-        trainloader, testloader = self.prepare_data()
-        train_losses_ls, mean_train_losses, test_losses_ls, mean_test_losses = self.train(
-            trainloader, testloader, verbose, print_every
-        )
-
-        print(f'Average Train MAE After Training: {np.mean(train_losses_ls)}')
-        print(f'Average Test MAE After Training: {np.mean(test_losses_ls)}')
-
+    
+    def save_results(self, train_losses_ls, mean_train_losses, test_losses_ls, mean_test_losses):
         folder = f'results/{self.dataset_name}/{self.model_name}'
         os.makedirs(folder, exist_ok=True)
         rnd_test_size_suffix = f'rs{self.random_seed}_ts{self.test_size:0.1f}'
@@ -219,3 +214,14 @@ class TrainingRunner(ABC):
         sns.histplot(data=test_losses_ls, bins=30)
         plt.savefig(f'{folder}/test_errors_{rnd_test_size_suffix}.png')
         plt.clf()
+
+    def run_pipeline(self, verbose, print_every):
+        trainloader, testloader = self.prepare_data()
+        train_losses_ls, mean_train_losses, test_losses_ls, mean_test_losses = self.train(
+            trainloader, testloader, verbose, print_every
+        )
+
+        print(f'Average Train MAE After Training: {np.mean(train_losses_ls)}')
+        print(f'Average Test MAE After Training: {np.mean(test_losses_ls)}')
+
+        self.save_results(train_losses_ls, mean_train_losses, test_losses_ls, mean_test_losses)

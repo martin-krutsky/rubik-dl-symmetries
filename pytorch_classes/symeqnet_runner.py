@@ -1,5 +1,6 @@
 from pytorch_classes.training_runner import TrainingRunner
 from pytorch_classes.symeqnet_model import SymEqNet
+from pytorch_classes.gcnet_model import GCNNet
 from pytorch_classes.graph_dataset import create_data_list
 from pytorch_classes.config import *
 
@@ -42,6 +43,6 @@ if __name__ == '__main__':
 
     resnet_runner = SymEqNetTrainingRunner(
         SYMEQNET_MODEL_NAME, SYMEQNET_HYPERPARAMS, LEARNING_RATE, NR_OF_EPOCHS,
-        config_number, SYMEQNET_LOADER_PARAMS, DATASET_NAME, DATASET_FILE, MAX_DISTANCE
+        config_number, GRAPH_LOADER_PARAMS, DATASET_NAME, DATASET_FILE, MAX_DISTANCE
     )
     resnet_runner.run_pipeline(VERBOSE, PRINT_EVERY)

@@ -74,6 +74,12 @@ def calc_distances_manh_pairwise_lex(vertices):
     return distances
 
 
+prohibited_together = [()]
+
+def is_impossible(colors):
+    
+
+
 def compress_one_dataset(filepath, compression_dict, hash_to_sizes, heuristics_func):
     df = pd.read_csv(filepath)
     df.colors = df.colors.map(eval)
@@ -104,11 +110,21 @@ elif HEURISTIC == 5:
     heuristic_function = calc_distances_manh_pairwise_lex
 
 compression_dictionary, hash_to_sizes = None, None
+total_patterns = 0
+classes_ls = []
 for root, dirs, filenames in os.walk(DIR):
     for i, filename in enumerate(sorted(filenames)):
         print(f'Processing dataset from file {filename}')  # nr. {i+1}/{len(filenames)}
         file_path = os.path.join(root, filename)
+        
+        df = pd.read_csv(file_path)
+        total_patterns += len(df.index)
+        classes_ls += list(df['symmetry_class'].unique())
+        df.colors = df.colors.map(eval)
         compression_dictionary, hash_to_sizes = compress_one_dataset(file_path, compression_dictionary, hash_to_sizes, heuristic_function)
+
+print(f'Total number of patterns: {total_patterns}')
+print(f'Total number of classes: {len(set(classes_ls))}')
 
 with open(f'data/processed/hash_to_sizes_{HEURISTIC}.pickle', 'wb') as f:
     pickle.dump(hash_to_sizes, f, protocol=pickle.HIGHEST_PROTOCOL)

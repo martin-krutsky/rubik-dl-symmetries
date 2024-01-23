@@ -3,6 +3,8 @@
 **/.idea/
 
 data/*
+temp/*
+imgs/*
 
 *.BATCH
 *.npy

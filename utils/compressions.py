@@ -77,16 +77,26 @@ def create_dicts_from_data(df: pd.DataFrame, distance: int, input_handling_func:
     Use dataset of cube states and their generators to produce a dictionary of compression classes
     based on the processed data (e.g., volumes, distances, angles, etc.).
     """
-    distance_x = df[df['distance'] == distance]['colors']
-    distance_x_gens = df[df['distance'] == distance]['generator']
     distance_x_dict = defaultdict(list)
-    for i, (cube, cube_gen) in enumerate(tqdm(list(zip(distance_x, distance_x_gens)))):
-        processed_data = input_handling_func(cube, verbose=False, aggregate=False, for_hashing=True)
-        if isinstance(processed_data[0], np.ndarray):
-            processed_data = [hash(sub_array.tostring()) for sub_array in processed_data]
-        processed_data = sorted(processed_data)
-        distance_x_dict[tuple(processed_data)].append((i, cube_gen))
-    return distance_x_dict
+    hash_to_sizes = defaultdict(list)
+    df_x = df[df['distance'] == distance]
+    for class_id in sorted(df_x['class_id'].unique()):
+        distance_x = df_x[df_x['class_id'] == class_id]['colors']
+        distance_x_gens = df_x[df_x['class_id'] == class_id]['generator']
+        distance_x_cls = df_x[df_x['class_id'] == class_id]['class_id']
+    
+        curr_proc_data_dict = defaultdict(int)
+        for i, (cube, cube_gen, cube_cls) in enumerate(tqdm(list(zip(distance_x, distance_x_gens, distance_x_cls)))):
+            processed_data = input_handling_func(cube, verbose=False, aggregate=True, for_hashing=True)
+            if isinstance(processed_data[0], np.ndarray):
+                processed_data = [hash(sub_array.tostring()) for sub_array in processed_data]
+            processed_data = sorted(processed_data)
+            distance_x_dict[tuple(processed_data)].append((i, cube_gen, cube_cls))
+            curr_proc_data_dict[tuple(processed_data)] += 1
+            
+        for proc_dat in curr_proc_data_dict:
+            hash_to_sizes[proc_dat].append(curr_proc_data_dict[proc_dat])
+    return distance_x_dict, hash_to_sizes
 
 
 def calculate_all_dicts_from_data(
@@ -95,9 +105,19 @@ def calculate_all_dicts_from_data(
     """
     Compute compression dictionaries for cubes with distance from goal in range between 1 and max_distance.
     """
-    distance_all_dicts = [create_dicts_from_data(df, distance, input_handling_func) for distance in
-                          range(1, max_distance + 1)]
-    return distance_all_dicts
+    distance_all_dicts = []
+    hash_to_cls_all_dicts = []
+    if max_distance is None:
+        for distance in sorted(df['distance'].unique()):
+            distance_x_dict, hash_to_cls_x_dict = create_dicts_from_data(df, distance, input_handling_func)
+            distance_all_dicts.append(distance_x_dict)
+            hash_to_cls_all_dicts.append(hash_to_cls_x_dict)            
+    else:
+        for distance in range(1, max_distance + 1):
+            distance_x_dict, hash_to_cls_x_dict = create_dicts_from_data(df, distance, input_handling_func)
+            distance_all_dicts.append(distance_x_dict)
+            hash_to_cls_all_dicts.append(hash_to_cls_x_dict)
+    return distance_all_dicts, hash_to_cls_all_dicts
 
 
 def create_dicts_from_activations(
@@ -140,7 +160,7 @@ def calculate_all_dicts_from_activations(
     if max_distance is None:
         distance_all_dicts = [
             create_dicts_from_activations(df, distance, input_handling_func, networks, is_graph_nn=is_graph_nn) for
-            distance in df['distance'].unique()]
+            distance in sorted(df['distance'].unique())]
     else:
         distance_all_dicts = [
             create_dicts_from_activations(df, distance, input_handling_func, networks, is_graph_nn=is_graph_nn) for

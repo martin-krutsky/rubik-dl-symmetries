@@ -25,8 +25,7 @@ def indices_to_position(indices):
 @functools.lru_cache
 def calc_volume(filtered_indices):
     vertices = indices_to_position(filtered_indices)
-    if (vertices[:, 0] == vertices[0, 0]).all() or (vertices[:, 1] == vertices[0, 1]).all() or (
-            vertices[:, 2] == vertices[0, 2]).all():
+    if (vertices[:, 0] == vertices[0, 0]).all() or (vertices[:, 1] == vertices[0, 1]).all() or (vertices[:, 2] == vertices[0, 2]).all():
         volume = 0
     else:
         volume = ConvexHull(vertices).volume

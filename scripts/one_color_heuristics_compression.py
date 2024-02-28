@@ -1,4 +1,3 @@
-import functools
 import pickle
 import sys
 from scipy.spatial import ConvexHull, distance_matrix
@@ -28,6 +27,7 @@ def find_middle(vertices):
             return vertex
     return None
 
+
 def calc_distances_middle(vertices):
     vertices = indices_to_position(vertices)
     middle = find_middle(vertices)
@@ -41,7 +41,11 @@ def calc_distances_middle(vertices):
 def calc_distances_pairwise_sum(vertices):
     vertices = indices_to_position(vertices)
     distances = distance_matrix(vertices, vertices)
-    distances = np.sort(distances.sum(axis=1))
+    print(distances)
+    distances = distances.sum(axis=1)
+    print(distances)
+    distances = np.sort(distances)
+    print(distances)
     distances = np.rint(distances * 10e4).astype(int)
     return distances
 
@@ -49,9 +53,13 @@ def calc_distances_pairwise_sum(vertices):
 def calc_distances_pairwise_lex(vertices):
     vertices = indices_to_position(vertices)
     distances = distance_matrix(vertices, vertices)
+    print(distances)
     distances = np.sort(distances, axis=1)
+    print(distances)
     distance_indices = np.lexsort(np.rot90(distances))
+    print(distance_indices)
     distances = distances[distance_indices].flatten()
+    print(distances)
     distances = np.rint(distances*10e4).astype(int)
     return distances
 
@@ -74,15 +82,35 @@ def calc_distances_manh_pairwise_lex(vertices):
     return distances
 
 
-prohibited_together = [()]
+prohibited_together = [
+    # corners
+    (0, 26, 47), (2, 20, 44), (6, 29, 53), (8, 35, 38),
+    (9, 18, 42), (11, 24, 45), (15, 33, 36), (17, 27, 51),
+    # edges
+    (1, 23), (3, 50), (5, 41), (7, 32), 
+    (10, 21), (12, 39), (14, 48), (16, 30),
+    (19, 43), (34, 37), (25, 46), (28, 52),
+]
 
-def is_impossible(colors):
-    
+
+def count_elements_in_array(arr, tup):
+    arr = np.asarray(arr)
+    tup = np.asarray(tup)
+    return np.sum(np.isin(arr, tup))
+
+
+def is_possible(colors):
+    for tup in prohibited_together:
+        if count_elements_in_array(colors, tup) > 1:
+            return False
+    return True
 
 
 def compress_one_dataset(filepath, compression_dict, hash_to_sizes, heuristics_func):
     df = pd.read_csv(filepath)
     df.colors = df.colors.map(eval)
+    df['possible'] = df.colors.map(is_possible)
+    df = df[df['possible']]
     df.head()
 
     compression_dict = compress_for_color(df, heuristics_func, 
@@ -92,52 +120,53 @@ def compress_one_dataset(filepath, compression_dict, hash_to_sizes, heuristics_f
     return compression_dict
 
 
-DIR = 'data/color_patterns/'
-HEURISTIC = int(sys.argv[1])
+if __name__ == "__main__":
+    DIR = 'data/color_patterns/'
+    HEURISTIC = int(sys.argv[1])
 
-heuristic_function = None
-if HEURISTIC == 0:
-    heuristic_function = calc_volume
-elif HEURISTIC == 1:
-    heuristic_function = calc_distances_middle
-elif HEURISTIC == 2:
-    heuristic_function = calc_distances_pairwise_sum
-elif HEURISTIC == 3:
-    heuristic_function = calc_distances_pairwise_lex
-elif HEURISTIC == 4:
-    heuristic_function = calc_distances_manh_pairwise_sum
-elif HEURISTIC == 5:
-    heuristic_function = calc_distances_manh_pairwise_lex
+    heuristic_function = None
+    if HEURISTIC == 0:
+        heuristic_function = calc_volume
+    elif HEURISTIC == 1:
+        heuristic_function = calc_distances_middle
+    elif HEURISTIC == 2:
+        heuristic_function = calc_distances_pairwise_sum
+    elif HEURISTIC == 3:
+        heuristic_function = calc_distances_pairwise_lex
+    elif HEURISTIC == 4:
+        heuristic_function = calc_distances_manh_pairwise_sum
+    elif HEURISTIC == 5:
+        heuristic_function = calc_distances_manh_pairwise_lex
 
-compression_dictionary, hash_to_sizes = None, None
-total_patterns = 0
-classes_ls = []
-for root, dirs, filenames in os.walk(DIR):
-    for i, filename in enumerate(sorted(filenames)):
-        print(f'Processing dataset from file {filename}')  # nr. {i+1}/{len(filenames)}
-        file_path = os.path.join(root, filename)
-        
-        df = pd.read_csv(file_path)
-        total_patterns += len(df.index)
-        classes_ls += list(df['symmetry_class'].unique())
-        df.colors = df.colors.map(eval)
-        compression_dictionary, hash_to_sizes = compress_one_dataset(file_path, compression_dictionary, hash_to_sizes, heuristic_function)
+    compression_dictionary, hash_to_sizes = None, None
+    total_patterns = 0
+    classes_ls = []
+    for root, dirs, filenames in os.walk(DIR):
+        for i, filename in enumerate(sorted(filenames)):
+            print(f'Processing dataset from file {filename}')  # nr. {i+1}/{len(filenames)}
+            file_path = os.path.join(root, filename)
 
-print(f'Total number of patterns: {total_patterns}')
-print(f'Total number of classes: {len(set(classes_ls))}')
+            df = pd.read_csv(file_path)
+            total_patterns += len(df.index)
+            classes_ls += list(df['symmetry_class'].unique())
+            df.colors = df.colors.map(eval)
+            compression_dictionary, hash_to_sizes = compress_one_dataset(file_path, compression_dictionary, hash_to_sizes, heuristic_function)
 
-with open(f'data/processed/hash_to_sizes_{HEURISTIC}.pickle', 'wb') as f:
-    pickle.dump(hash_to_sizes, f, protocol=pickle.HIGHEST_PROTOCOL)
+    print(f'Total number of patterns: {total_patterns}')
+    print(f'Total number of classes: {len(set(classes_ls))}')
 
-nonunique_num = 0
-incorrectly_interchangeable = 0
+    with open(f'data/processed/filtered_hash_to_sizes_{HEURISTIC}.pickle', 'wb') as f:
+        pickle.dump(hash_to_sizes, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-for value_list in hash_to_sizes.values():
-    if len(value_list) > 1:
-        nonunique_num += len(value_list)
-        value_list_sum = sum(value_list)
-        for value in value_list:
-            incorrectly_interchangeable += value * (value_list_sum - value)
-            
-print(f'Nr of classes with non-unique hashes: {nonunique_num}')
-print(f'Nr of incorrectly interchangeable members: {incorrectly_interchangeable}')
+    # nonunique_num = 0
+    # incorrectly_interchangeable = 0
+    #
+    # for value_list in hash_to_sizes.values():
+    #     if len(value_list) > 1:
+    #         nonunique_num += len(value_list)
+    #         value_list_sum = sum(value_list)
+    #         for value in value_list:
+    #             incorrectly_interchangeable += value * (value_list_sum - value)
+    #
+    # print(f'Nr of classes with non-unique hashes: {nonunique_num}')
+    # print(f'Nr of incorrectly interchangeable members: {incorrectly_interchangeable}')

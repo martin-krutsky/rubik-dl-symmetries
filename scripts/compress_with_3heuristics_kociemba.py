@@ -1,19 +1,10 @@
 import ast
-from collections import defaultdict
 import functools
-import math
-import numpy as np
-import pandas as pd
 import pickle
-import random
 import sys
-from tqdm import tqdm
 
 from scipy.spatial import ConvexHull, distance_matrix
 
-from classes.cube_classes import Cube3State, Cube3
-from generate.generate_states import ids_to_color
-from utils.random_seed import seed_worker, seed_all, init_weights
 from utils.compressions import *
 from generate.symmetry_config import pos_list
 
@@ -40,7 +31,68 @@ def calc_volume(vertices):
         volume = ConvexHull(vertices).volume
     volume = np.rint(volume*10e4).astype(int)
     return volume
-    
+
+
+def find_middle(vertices):
+    for vertex in vertices:
+        if (vertex[0] == vertex[1] == 1.5) or (vertex[0] == vertex[2] == 1.5) or (vertex[1] == vertex[2] == 1.5):
+            return vertex
+    return None
+
+
+def calc_distances_middle(vertices):
+    vertices = indices_to_position(vertices)
+    middle = find_middle(vertices)
+    distances = np.linalg.norm(vertices - middle.reshape(1, -1), axis=1)
+    distances = distances[distances != 0]
+    distances = np.sort(distances)
+    distances = np.rint(distances*10e4).astype(int)
+    return distances
+
+
+@functools.lru_cache
+def calc_distances_pairwise_sum(vertices):
+    vertices = indices_to_position(vertices)
+    distances = distance_matrix(vertices, vertices)
+    distances = np.sort(distances.sum(axis=1))
+    distances = np.rint(distances * 10e4).astype(int)
+    return distances
+
+
+def calc_distances_pairwise_lex(vertices):
+    vertices = indices_to_position(vertices)
+    distances = distance_matrix(vertices, vertices)
+    print(distances)
+    distances = np.sort(distances, axis=1)
+    print(distances)
+    distance_indices = np.lexsort(np.rot90(distances))
+    print(distance_indices)
+    distances = distances[distance_indices].flatten()
+    print(distances)
+    distances = np.rint(distances*10e4).astype(int)
+    return distances
+
+
+def calc_distances_manh_pairwise_sum(vertices):
+    vertices = indices_to_position(vertices)
+    distances = distance_matrix(vertices, vertices, p=1)
+    distances = np.sort(distances.sum(axis=1))
+    distances = np.rint(distances * 10e4).astype(int)
+    return distances
+
+
+def calc_distances_manh_pairwise_lex(vertices):
+    vertices = indices_to_position(vertices)
+    distances = distance_matrix(vertices, vertices, p=1)
+    distances = np.sort(distances, axis=1)
+    distance_indices = np.lexsort(np.rot90(distances))
+    distances = distances[distance_indices].flatten()
+    distances = np.rint(distances*10e4).astype(int)
+    return distances
+
+
+# ----------------------------------------------------------------
+# ----------------------------------------------------------------
 
 counterVolume = 0
 
@@ -63,21 +115,11 @@ def calc_volumes(colors, verbose=True, aggregate=False, for_hashing=False):
         volumes = np.sum(volumes, dtype=np.double)[..., np.newaxis]
     return volumes
 
-# ----------------------------------------------------------------
-   
-@functools.lru_cache
-def calc_distances_pairwise_sum(vertices):
-    vertices = indices_to_position(vertices)
-    distances = distance_matrix(vertices, vertices)
-    distances = np.sort(distances.sum(axis=1))
-    distances = np.rint(distances * 10e4).astype(int)
-    return distances
-
 
 counterDist = 0
 
 
-def calc_all_distances(colors, verbose=True, aggregate=False, for_hashing=False):
+def calc_all_distances(colors, distance_func=calc_distances_middle, verbose=True, aggregate=False):
     if verbose:
         global counterDist
         counterDist += 1
@@ -88,7 +130,7 @@ def calc_all_distances(colors, verbose=True, aggregate=False, for_hashing=False)
     colors = np.array(colors)
     for color in range(6):
         filtered_indices = indices[colors == color]
-        distances = calc_distances_pairwise_sum(tuple(filtered_indices))
+        distances = distance_func(tuple(filtered_indices))
         distances_ls.append(distances)
     distances_ls = np.array(distances_ls)
     if aggregate:
@@ -97,23 +139,34 @@ def calc_all_distances(colors, verbose=True, aggregate=False, for_hashing=False)
 
 # ----------------------------------------------------------------
 
-HEURISTIC = int(sys.argv[1])
-heuristic_dict = {0: 'volume', 1: 'distance'}
-heuristic_function = None
-if HEURISTIC == 0:
-    heuristic_function = calc_volumes
-elif HEURISTIC == 1:
-    heuristic_function = calc_all_distances
 
-compressions, hash_to_sizes = calculate_all_dicts_from_data(df=df, max_distance=None, 
-                                                            input_handling_func=heuristic_function)
+if __name__ == "__main__":
+    HEURISTIC = int(sys.argv[1])
+    heuristic_dict = {
+        0: 'vol', 1: 'd1', 2: 'd2', 3: 'd3', 4: 'd4', 5: 'd5'
+    }
+    heuristic_function = None
+    if HEURISTIC == 0:
+        heuristic_function = calc_volumes
+    elif HEURISTIC == 1:
+        heuristic_function = functools.partial(calc_all_distances, distance_func=calc_distances_middle)
+    elif HEURISTIC == 2:
+        heuristic_function = functools.partial(calc_all_distances, distance_func=calc_distances_pairwise_sum)
+    elif HEURISTIC == 3:
+        heuristic_function = functools.partial(calc_all_distances, distance_func=calc_distances_pairwise_lex)
+    elif HEURISTIC == 4:
+        heuristic_function = functools.partial(calc_all_distances, distance_func=calc_distances_manh_pairwise_sum)
+    elif HEURISTIC == 5:
+        heuristic_function = functools.partial(calc_all_distances, distance_func=calc_distances_manh_pairwise_lex)
 
+    compressions, hash_to_sizes = calculate_all_dicts_from_data(df=df, max_distance=None,
+                                                                input_handling_func=heuristic_function)
 
-with open(f'data/temp/{heuristic_dict[HEURISTIC]}_compressions_kociemba.pkl', 'wb') as f:
-    pickle.dump(compressions, f)
-    
-with open(f'data/temp/{heuristic_dict[HEURISTIC]}_hashtosizes_kociemba.pkl', 'wb') as f:
-    pickle.dump(hash_to_sizes, f)
-    
-# set_intersections_activations_sparse_graph = compute_set_intersections(gcn_compressions)
-# plot_distance_compressions(gcn_compressions, f'symeqnet_compressions/from_activations{N_MOVES}')
+    with open(f'data/temp/{heuristic_dict[HEURISTIC]}_compressions_kociemba.pkl', 'wb') as f:
+        pickle.dump(compressions, f)
+
+    with open(f'data/temp/{heuristic_dict[HEURISTIC]}_hashtosizes_kociemba.pkl', 'wb') as f:
+        pickle.dump(hash_to_sizes, f)
+
+    # set_intersections_activations_sparse_graph = compute_set_intersections(gcn_compressions)
+    # plot_distance_compressions(gcn_compressions, f'symeqnet_compressions/from_activations{N_MOVES}')

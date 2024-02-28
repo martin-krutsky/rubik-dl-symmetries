@@ -33,7 +33,7 @@ def create_networks(
 def compress_for_color(
         df: pd.DataFrame, input_handling_func: Callable, break_on_error: bool = True, verbose: bool = True,
         compression_dict: Dict[Tuple, Tuple] = None, hash_to_sizes = None
-) -> Dict[Tuple, Tuple]:
+) -> Tuple[Dict[Tuple, Tuple], Dict[Tuple, int]]:
     """
     Create a compression dictionary for a dataset of facelets corresponding to a single color in the Rubik's cube.
     Alert on possible intersections/non-unique hashes.

@@ -1,6 +1,5 @@
 from pytorch_classes.training_runner import TrainingRunner
 from pytorch_classes.symeqnet_model import SymEqNet
-from pytorch_classes.gcnet_model import GCNNet
 from pytorch_classes.graph_dataset import create_data_list
 from pytorch_classes.config import *
 

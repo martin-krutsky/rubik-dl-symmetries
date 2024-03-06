@@ -119,7 +119,7 @@ def calc_volumes(colors, verbose=True, aggregate=False, for_hashing=False):
 counterDist = 0
 
 
-def calc_all_distances(colors, distance_func=calc_distances_middle, verbose=True, aggregate=False):
+def calc_all_distances(colors, distance_func=calc_distances_middle, verbose=True, aggregate=False, for_hashing=False):
     if verbose:
         global counterDist
         counterDist += 1

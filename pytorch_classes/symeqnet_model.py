@@ -32,6 +32,9 @@ class SymEqNet(torch.nn.Module):
         elif gnn_layer_class == 'GATv2Conv':
             self.conv1 = gnn.GATv2Conv(in_channels=node_features_size, out_channels=hidden_graph_channels,
                                        edge_dim=1, **other_kwds)
+        elif gnn_layer_class == 'GENConv':
+            self.conv1 = gnn.GENConv(in_channels=node_features_size, out_channels=hidden_graph_channels,
+                                     edge_dim=1, aggr='add', **other_kwds)
         else:
             raise Exception(f'Unsupported GNN layer ({gnn_layer_class}) name!')
 

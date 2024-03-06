@@ -21,6 +21,7 @@ class TrainingRunner(ABC):
     def __init__(self, model_name, model_class, model_hyperparams, lr, nr_of_epochs, config_nr,
                  loader_params, dataset_name, dataset_file, max_distance_from_goal):
         self.model = None
+        self.optimizer = None
         self.ModelClass = model_class
         self.model_name = model_name
         self.model_hyperparams = model_hyperparams
@@ -124,7 +125,7 @@ class TrainingRunner(ABC):
 
         criterion = nn.MSELoss()
         criterion2 = nn.L1Loss(reduction='none')
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
         train_losses_ls, test_losses_ls = None, None
         mean_train_losses, mean_test_losses = (
@@ -143,13 +144,13 @@ class TrainingRunner(ABC):
                 inputs, labels = self.split_input_labels(data)
 
                 # zero the parameter gradients
-                optimizer.zero_grad()
+                self.optimizer.zero_grad()
 
                 # forward + backward + optimize
                 outputs = self.model(inputs)
                 loss = criterion(torch.squeeze(outputs), labels.double())
                 loss.backward()
-                optimizer.step()
+                self.optimizer.step()
 
                 # print statistics
                 running_loss += loss.item()
@@ -195,6 +196,17 @@ class TrainingRunner(ABC):
                 mean_test_losses)
         np.save(f'{folder}/results_{rnd_test_size_suffix}.npy',
                 np.array([np.mean(train_losses_ls), np.mean(test_losses_ls)]))
+
+        folder = f'checkpoints/{self.dataset_name}/{self.model_name}'
+        os.makedirs(folder, exist_ok=True)
+        torch.save({
+            "model_class": self.ModelClass,
+            "model_hyperparams": self.model_hyperparams,
+            "epoch": len(mean_train_losses) - 1,
+            "model_state_dict": self.model.state_dict(),
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            }, f"{folder}/model_{rnd_test_size_suffix}.pth"
+        )
 
         folder = f'imgs/model_performance/{self.dataset_name}/{self.model_name}'
         os.makedirs(folder, exist_ok=True)

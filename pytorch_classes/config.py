@@ -32,7 +32,7 @@ SYMEQNET_HYPERPARAMS = {
     'resnet_dim': 100,
     'num_resnet_blocks': 2,
     'batch_norm': True,
-    'gnn_layer_class': 'SimpleConv'
+    'gnn_layer_class': 'GENConv'
 }
 
 RESNET_HYPERPARAMS = {
@@ -51,16 +51,16 @@ FEEDFORWARD_HYPERPARAMS = {
     'out_dim': 1, 
 }
 
-KOCIEMBAS_SIZE = 10000
+KOCIEMBAS_SIZE = 100000
 RESNET_MODEL_NAME = f'ResNet'
-SYMEQNET_MODEL_NAME = f'SymEqNet'
+SYMEQNET_MODEL_NAME = f'GENNet'
 FEEDFORWARD_MODEL_NAME = 'FeedForward'
 
 LEARNING_RATE = 0.001
 
-MAX_DISTANCE = None
+MAX_DISTANCE = 5
 DATASET_NAME = f'5moves'  # 5moves/6moves/kociemba/kociemba{KOCIEMBAS_SIZE}
-# 5_moves_dataset_single.pkl/6_moves_dataset_single.csv/kociemba_dataset.csv
+# 5_moves_dataset_single.pkl/6_moves_dataset_single.csv/kociemba_dataset.csv/kociemba{KOCIEMBAS_SIZE}_dataset.pkl
 DATASET_FILE = f'data/processed/5_moves_dataset_single.pkl'
 
 PRINT_EVERY = 100

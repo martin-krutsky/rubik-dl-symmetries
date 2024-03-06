@@ -121,7 +121,7 @@ def calc_volumes(colors, verbose=True, aggregate=False, for_hashing=False):
 counterDist = 0
 
 
-def calc_all_distances(colors, verbose=True, aggregate=False, for_hashing=False):
+def calc_all_distances(colors, distance_func=calc_distances_middle, verbose=True, aggregate=False, for_hashing=False):
     if verbose:
         global counterDist
         counterDist += 1
@@ -132,7 +132,7 @@ def calc_all_distances(colors, verbose=True, aggregate=False, for_hashing=False)
     colors = np.array(colors)
     for color in range(6):
         filtered_indices = indices[colors == color]
-        distances = calc_distances_pairwise_sum(tuple(filtered_indices))
+        distances = distance_func(tuple(filtered_indices))
         distances_ls.append(distances)
     distances_ls = np.array(distances_ls)
     if aggregate:

@@ -110,10 +110,7 @@ def calc_accuracy(states, generators, network, network_name, metric, dataset_nam
     return accuracy, n_correct, n_states
 
 
-def get_test_set(dataframe, test_size, random_seed):
-    # x_train, x_test, y_train, y_test = train_test_split(
-    #     dataset, targets, stratify=targets, test_size=test_size, random_state=random_seed
-    # )
+def get_train_test_set(dataframe, test_size, random_seed):
     train, test = train_test_split(
         dataframe, stratify=dataframe['distance'], test_size=test_size, random_state=random_seed
     )
@@ -121,8 +118,7 @@ def get_test_set(dataframe, test_size, random_seed):
 
 
 def create_color_loader(dataframe, solved_state_colors, test_size, random_seed):
-    # x_train, x_test, y_train, y_test = get_test_set(dataframe['colors'], dataframe['distance'], test_size, random_seed)
-    train, test = get_test_set(dataframe, test_size, random_seed)
+    train, test = get_train_test_set(dataframe, test_size, random_seed)
 
     test_inputs = test['colors'].tolist()
     test_targets = test['distance'].tolist()
@@ -137,8 +133,7 @@ def create_color_loader(dataframe, solved_state_colors, test_size, random_seed):
 
 
 def create_graph_loader(dataframe, solved_state_colors, test_size, random_seed):
-    # x_train, x_test, y_train, y_test = get_test_set(dataframe['colors'], dataframe['distance'], test_size, random_seed)
-    train, test = get_test_set(dataframe, test_size, random_seed)
+    train, test = get_train_test_set(dataframe, test_size, random_seed)
 
     test_inputs = test['colors'].tolist()
     test_targets = test['distance'].tolist()
@@ -189,48 +184,8 @@ def single_accuracy_n_moves(states, generators, train_colors, test_colors, train
     return accuracy, n_correct, n_states
 
 
-# def collect_accuracies_n_moves(states, generators, colors, dataloader, metric, dataset_name, model_name,
-#                                eval_single_func):
-#     n_states = len(states)
-#     print(f"Testing {n_states} of examples.")
-#     result_dict = {}
-#     for test_size in np.arange(0.1, 1.0, 0.1):
-#         result_dict[test_size] = []
-#         for random_seed in range(10):
-#             accuracy, _, _ = single_accuracy_n_moves(states, generators, colors, dataloader, metric, dataset_name,
-#                                                      model_name, test_size, random_seed, eval_single_func)
-#             result_dict[test_size].append(accuracy)
-#     return result_dict
-#
-#
-# def run_resnet_n_moves(n=5):
-#     dataframe = pd.read_pickle(f'{CURRFOLDER}/data/processed/{n}_moves_dataset_single.pkl')
-#     # dataframe = dataframe[dataframe['distance'] <= 1]
-#     solved = (Cube3().generate_goal_states(1)[0].colors // 9).tolist()
-#     resnet_loader = create_color_loader(dataframe, solved)
-#     resnet_acc_dict = collect_accuracies_n_moves(dataframe.state, dataframe.generator,
-#                                                  dataframe.colors.tolist() + [solved], resnet_loader,
-#                                                  'qt', '5moves', 'ResNet', eval_color_single)
-#     print(resnet_acc_dict)
-#
-#
-# def run_symnet_n_moves(n=5):
-#     dataframe = pd.read_pickle(f'{CURRFOLDER}/data/processed/{n}_moves_dataset_single.pkl')
-#     # dataframe = dataframe[dataframe['distance'] <= 1]
-#     solved = (Cube3().generate_goal_states(1)[0].colors // 9).tolist()
-#     symnet_loader = create_graph_loader(dataframe, solved)
-#     resnet_acc_dict = collect_accuracies_n_moves(dataframe.state, dataframe.generator,
-#                                                  dataframe.colors.tolist() + [solved], symnet_loader,
-#                                                  'qt', f'{n}moves', 'SymEqNet', eval_graph_single)
-#     print(resnet_acc_dict)
-
-
 if __name__ == '__main__':
-    # run_resnet_n_moves()
-    # run_symnet_n_moves()
-
     CURRFOLDER = '.'
-
     TASK = '5moves'
     MODEL = 'ResNet'
 
@@ -273,5 +228,3 @@ if __name__ == '__main__':
     os.makedirs(out_folder, exist_ok=True)
     with open(f'{out_folder}/ts{tst_size:.1f}_rs{rnd_seed}.txt', 'w') as f:
         f.write('\n'.join([str(acc), str(correct), str(nr_of_states)]))
-
-# TODO: kociemba

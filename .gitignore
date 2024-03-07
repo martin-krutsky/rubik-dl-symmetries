@@ -5,6 +5,8 @@
 data/*
 temp/*
 imgs/*
+mlruns/*
+analyzed_results/*
 
 *.BATCH
 *.npy

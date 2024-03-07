@@ -35,7 +35,7 @@ def create_complete_graph_data_obj(colors, distance_from_goal, node_features_siz
         for i, node_i in enumerate(filtered_indices):
             for j, node_j in enumerate(filtered_indices):
                 edge_index.append([node_i, node_j])
-                edge_attr.append(dist_mat[i,j])
+                edge_attr.append(dist_mat[i, j])
         curr_idx += len(filtered_indices)
     y = distance_from_goal
     node_features = np.sort(node_features, axis=1)

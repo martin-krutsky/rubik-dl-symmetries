@@ -6,7 +6,7 @@ from torch_geometric.nn.pool import global_mean_pool
 
 
 class SymEqNet(torch.nn.Module):
-    def __init__(self, gnn_layer_class='SimpleConv', node_features_size=9, hidden_graph_channels=10,
+    def __init__(self, gnn_layer_class='SimpleConv', node_features_size=9, hidden_graph_channels=9,
                  h1_dim=10, resnet_dim=10, num_resnet_blocks=1, batch_norm=True, other_kwds=None):
         super(SymEqNet, self).__init__()
         if other_kwds is None:

@@ -14,6 +14,7 @@ ACTION_DICT = {
     'ft': np.array(
         ["U'", "U", "D'", "D", "L'", "L", "R'", "R", "F'", "F", "B'", "B", "U2", "D2", "L2", "R2", "F2", "B2"])
 }
+global_cube = Cube3()
 
 
 def get_best_actions(generator):
@@ -26,14 +27,12 @@ def get_best_actions(generator):
     return best_actions
 
 
-def change_cubestate(cube_state, operation, cube=None):
-    if cube is None:
-        cube = Cube3()
+def change_cubestate(cube_state, operation):
     if operation[-1] == '2':
-        prev_state_ls = cube.prev_state([cube_state], char_to_move_index(operation[:-1]))[0]
-        prev_state_ls = cube.prev_state([prev_state_ls], char_to_move_index(operation[:-1]))[0]
+        prev_state_ls = global_cube.prev_state([cube_state], char_to_move_index(operation[:-1]))[0]
+        prev_state_ls = global_cube.prev_state([prev_state_ls], char_to_move_index(operation[:-1]))[0]
     else:
-        prev_state_ls = cube.prev_state([cube_state], char_to_move_index(operation))[0]
+        prev_state_ls = global_cube.prev_state([cube_state], char_to_move_index(operation))[0]
     return prev_state_ls
 
 
@@ -45,6 +44,42 @@ def eval_color_single(colors, network):
 def eval_graph_single(colors, network):
     graph_data = gd.create_complete_graph_data_obj(colors, 0)
     return network(graph_data).flatten().item()
+
+
+def next_if_correct(cube_state, generator, network, metric, dataset_name, pred_dict, dist_dict, eval_single_func):
+    preds, best_preds, dists = [], [], []
+    orig_colors = cube_state.colors // 9
+    orig_immutable = tuple(orig_colors)
+    orig_dist = dist_dict[orig_immutable]
+    best_actions = get_best_actions(generator)
+    for action in ACTION_DICT[metric]:
+        curr_state = change_cubestate(cube_state, action)
+        input_colors = curr_state.colors // 9
+        input_immutable = tuple(input_colors)
+        if input_immutable in pred_dict:
+            pred_distance = pred_dict[input_immutable]
+            true_distance = dist_dict[input_immutable]
+        else:
+            pred_distance = eval_single_func(input_colors, network)
+            true_distance = orig_dist + 1
+            pred_dict[input_immutable] = pred_distance
+            dist_dict[input_immutable] = true_distance
+        preds.append(pred_distance)
+        dists.append(true_distance)
+        if action in best_actions:
+            best_preds.append(pred_distance)
+
+    preds = np.array(preds)
+    dists = np.array(dists)
+
+    best_pred_dist = np.min(preds)
+    pred_winners = np.argwhere(preds == best_pred_dist).flatten()
+    best_true_dist = np.min(dists)
+    dist_winners = np.argwhere(dists == best_true_dist).flatten()
+    intersection = set(pred_winners) & set(dist_winners)
+    if intersection:
+        return ACTION_DICT[metric][next(iter(intersection))], pred_dict, dist_dict
+    return False, pred_dict, dist_dict
 
 
 def is_prediction_correct(cube_state, generator, network, metric, dataset_name, pred_dict, dist_dict, eval_single_func):
@@ -102,28 +137,6 @@ def calc_accuracy(states, generators, network, network_name, metric, dataset_nam
     return accuracy, n_correct, n_states
 
 
-def get_train_test_set(dataframe, test_size, random_seed):
-    train, test = train_test_split(
-        dataframe, stratify=dataframe['distance'], test_size=test_size, random_state=random_seed
-    )
-    return train, test
-
-
-def create_loader(dataframe, solved_state_colors, test_size, random_seed, dataset_func, dataloader_cls):
-    train, test = get_train_test_set(dataframe, test_size, random_seed)
-
-    test_inputs = test['colors'].tolist()
-    test_targets = test['distance'].tolist()
-    test_dataset = cd.ColorDataset(test_inputs, test_targets)
-    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-
-    train_inputs = train['colors'].tolist() + [solved_state_colors]
-    train_targets = train['distance'].tolist() + [0]
-    train_dataset = dataset_func(train_inputs, train_targets)
-    train_dataloader = dataloader_cls(train_dataset, batch_size=1, shuffle=False)
-    return train_dataloader, test_dataloader, train, test
-
-
 def eval_dataset(network, train_loader, test_loader, train_color_ls, test_color_ls):
     predicted_dict, distance_dict = {}, {}
     network.eval()
@@ -159,3 +172,25 @@ def single_accuracy_n_moves(states, generators, train_colors, test_colors, train
                                                   f'{model_name}, t.s. {test_size:.1f}, r.s. {random_seed}',
                                                   metric, dataset_name, pred_dict, dist_dict, eval_single_func)
     return accuracy, n_correct, n_states
+
+
+def get_train_test_set(dataframe, test_size, random_seed):
+    train, test = train_test_split(
+        dataframe, stratify=dataframe['distance'], test_size=test_size, random_state=random_seed
+    )
+    return train, test
+
+
+def create_loader(dataframe, solved_state_colors, test_size, random_seed, dataset_func, dataloader_cls):
+    train, test = get_train_test_set(dataframe, test_size, random_seed)
+
+    test_inputs = test['colors'].tolist()
+    test_targets = test['distance'].tolist()
+    test_dataset = cd.ColorDataset(test_inputs, test_targets)
+    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+
+    train_inputs = train['colors'].tolist() + [solved_state_colors]
+    train_targets = train['distance'].tolist() + [0]
+    train_dataset = dataset_func(train_inputs, train_targets)
+    train_dataloader = dataloader_cls(train_dataset, batch_size=1, shuffle=False)
+    return train_dataloader, test_dataloader, train, test

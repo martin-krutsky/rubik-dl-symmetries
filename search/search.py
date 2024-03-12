@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
@@ -13,6 +15,11 @@ ACTION_DICT = {
         ["U'", "U", "D'", "D", "L'", "L", "R'", "R", "F'", "F", "B'", "B", "U2", "D2", "L2", "R2", "F2", "B2"])
 }
 global_cube = Cube3()
+SOLVED_STATE_COLORS = Cube3().generate_goal_states(1)[0].colors // 9
+
+
+def is_goal_colors(colors):
+    return np.array_equal(colors, SOLVED_STATE_COLORS)
 
 
 def get_best_actions(generator):
@@ -37,11 +44,12 @@ def create_cubestate_from_colors(colors):
 
 
 def change_cubestate(cube_state, operation):
+    new_cube_state = copy.copy(cube_state)
     if operation[-1] == '2':
-        prev_state_ls = global_cube.prev_state([cube_state], char_to_move_index(operation[:-1]))[0]
+        prev_state_ls = global_cube.prev_state([new_cube_state], char_to_move_index(operation[:-1]))[0]
         prev_state_ls = global_cube.prev_state([prev_state_ls], char_to_move_index(operation[:-1]))[0]
     else:
-        prev_state_ls = global_cube.prev_state([cube_state], char_to_move_index(operation))[0]
+        prev_state_ls = global_cube.prev_state([new_cube_state], char_to_move_index(operation))[0]
     return prev_state_ls
 
 
@@ -55,7 +63,49 @@ def eval_graph_single(colors, network):
     return network(graph_data).flatten().item()
 
 
-def next_if_correct(cube_state, generator, network, metric, dataset_name, pred_dict, dist_dict, eval_single_func):
+def search_bounded(cube_state, generator, network, metric, pred_dict, eval_single_func, bound=20):
+    counter = 0
+    goal_found = False
+    path = []
+    old_state = cube_state
+    while not goal_found and counter < bound:
+        preds = []
+        new_states = []
+        for action in ACTION_DICT[metric]:
+            new_state = change_cubestate(old_state, action)
+            new_states.append(new_state)
+            input_colors = new_state.colors // 9
+            if is_goal_colors(input_colors):
+                path.append(action)
+                return True, len(path) == len(generator[0]), path
+            input_immutable = tuple(input_colors)
+            if input_immutable in pred_dict:
+                pred_distance = pred_dict[input_immutable]
+            else:
+                pred_distance = eval_single_func(input_colors, network)
+                pred_dict[input_immutable] = pred_distance
+            preds.append(pred_distance)
+        old_state = new_states[np.argmin(preds)]
+    return False, False, None
+
+
+def calc_solved_rates(states, generators, network, network_name, metric, pred_dict, eval_single_func):
+    n_states = len(states)
+    print(f"Network {network_name}")
+    solved, perfectly_solved = 0, 0
+    for state, generator in tqdm.tqdm(zip(states, generators), miniters=1000):
+        is_solved, is_perf_solved, path = search_bounded(state, generator, network, metric, pred_dict, eval_single_func)
+        if is_solved:
+            solved += 1
+            if is_perf_solved:
+                perfectly_solved += 1
+    solved_rate = solved / n_states
+    perf_solved_rate = perfectly_solved / n_states
+    print(f"Solved rate: {solved_rate}, Perf. solved rate: {perf_solved_rate}, nr of examples {n_states}")
+    return solved_rate, perf_solved_rate, solved, perfectly_solved, n_states
+
+
+def next_if_correct(cube_state, generator, network, metric, pred_dict, dist_dict, eval_single_func):
     preds, best_preds, dists = [], [], []
     orig_colors = cube_state.colors // 9
     orig_immutable = tuple(orig_colors)
@@ -170,6 +220,18 @@ def load_model(path):
     model = ModelClass(**hyperparams)
     model.load_state_dict(checkpoint['model_state_dict'])
     return model
+
+
+def single_solved_rate_n_moves(states, generators, train_colors, test_colors, train_loader, test_loader, metric,
+                               dataset_name, model_name, test_size, random_seed, eval_single_func, curr_folder):
+    path = f'{curr_folder}/checkpoints/{dataset_name}/{model_name}/model_rs{random_seed}_ts{test_size:.1f}.pth'
+    network = load_model(path)
+    pred_dict, dist_dict = eval_dataset(network, train_loader, test_loader, train_colors, test_colors)
+    solved_rate, perf_solved_rate, solved, perfectly_solved, n_states = calc_solved_rates(
+        states, generators, network, f'{model_name}, t.s. {test_size:.1f}, r.s. {random_seed}',
+        metric, pred_dict, eval_single_func
+    )
+    return solved_rate, perf_solved_rate, solved, perfectly_solved, n_states
 
 
 def single_accuracy_n_moves(states, generators, train_colors, test_colors, train_loader, test_loader, metric,

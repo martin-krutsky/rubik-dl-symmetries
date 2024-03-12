@@ -1,13 +1,11 @@
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader
 import tqdm
 
-from classes.cube_classes import Cube3
+from classes.cube_classes import Cube3, Cube3State
 from generate.generate_states import char_to_move_index
 import pytorch_classes.graph_dataset as gd
-import pytorch_classes.color_dataset as cd
 
 ACTION_DICT = {
     'qt': np.array(["U'", "U", "D'", "D", "L'", "L", "R'", "R", "F'", "F", "B'", "B"]),
@@ -32,6 +30,10 @@ def create_cubestate_from_gen(generator):
     for move in generator:
         state = change_cubestate(state, move)
     return state
+
+
+def create_cubestate_from_colors(colors):
+    return Cube3State(colors=colors)
 
 
 def change_cubestate(cube_state, operation):
@@ -181,15 +183,23 @@ def single_accuracy_n_moves(states, generators, train_colors, test_colors, train
     return accuracy, n_correct, n_states
 
 
-def get_train_test_set(dataframe, test_size, random_seed):
-    train, test = train_test_split(
-        dataframe, stratify=dataframe['distance'], test_size=test_size, random_state=random_seed
-    )
+def get_train_test_set(dataframe, test_size, random_seed, split_type):
+    if split_type == 'adversarial':
+        test_size_adv = int(round(test_size * len(dataframe.index) / 48))
+        train, test = train_test_split(
+            dataframe, stratify=dataframe['class_id'], test_size=test_size_adv, random_state=random_seed
+        )
+    elif split_type == 'ratio':
+        train, test = train_test_split(
+            dataframe, stratify=dataframe['distance'], test_size=test_size, random_state=random_seed
+        )
+    else:
+        raise Exception
     return train, test
 
 
-def create_loader(dataframe, solved_state_colors, test_size, random_seed, dataset_func, dataloader_cls):
-    train, test = get_train_test_set(dataframe, test_size, random_seed)
+def create_loader(dataframe, solved_state_colors, test_size, random_seed, dataset_func, dataloader_cls, split_type):
+    train, test = get_train_test_set(dataframe, test_size, random_seed, split_type)
 
     test_inputs = test['colors'].tolist()
     test_targets = test['distance'].tolist()

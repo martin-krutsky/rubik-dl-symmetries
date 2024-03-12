@@ -56,7 +56,7 @@ if __name__ == '__main__':
     df = pandas_reader(f'{CURRFOLDER}/data/processed/{FILE}')
     df['colors'] = df['colors'].map(np.array)
     if TASK in ['kociemba10000', 'kociemba100000']:
-        df['state'] = df['colors'].map(create_cubestate_from_colors)
+        df['state'] = df['generator'].map(create_cubestate_from_gen)  # df['colors'].map(create_cubestate_from_colors)
     # df = df[df['distance'] <= 1]
     solved_colors = (Cube3().generate_goal_states(1)[0].colors // 9).tolist()
     tr_loader, ts_loader, train_df, test_df = create_loader(df, solved_colors, tst_size, rnd_seed)

@@ -27,6 +27,13 @@ def get_best_actions(generator):
     return best_actions
 
 
+def create_cubestate_from_gen(generator):
+    state = global_cube.generate_goal_states(1)[0]
+    for move in generator:
+        state = change_cubestate(state, move)
+    return state
+
+
 def change_cubestate(cube_state, operation):
     if operation[-1] == '2':
         prev_state_ls = global_cube.prev_state([cube_state], char_to_move_index(operation[:-1]))[0]
@@ -186,8 +193,8 @@ def create_loader(dataframe, solved_state_colors, test_size, random_seed, datase
 
     test_inputs = test['colors'].tolist()
     test_targets = test['distance'].tolist()
-    test_dataset = cd.ColorDataset(test_inputs, test_targets)
-    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+    test_dataset = dataset_func(test_inputs, test_targets)
+    test_dataloader = dataloader_cls(test_dataset, batch_size=1, shuffle=False)
 
     train_inputs = train['colors'].tolist() + [solved_state_colors]
     train_targets = train['distance'].tolist() + [0]

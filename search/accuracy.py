@@ -11,27 +11,28 @@ from classes.cube_classes import Cube3
 from pytorch_classes.config import CONFIGS
 import pytorch_classes.graph_dataset as gd
 import pytorch_classes.color_dataset as cd
-from search.search import single_accuracy_n_moves, eval_color_single, eval_graph_single, create_loader
+from search.search import single_accuracy_n_moves, eval_color_single, eval_graph_single, create_loader, create_cubestate_from_gen
 
 if __name__ == '__main__':
     CURRFOLDER = '.'
-    TASK = '5moves'
+    TASK = 'kociemba10'
     MODEL = 'ResNet'
 
     if TASK == '5moves':
         FILE = '5_moves_dataset_single.pkl'
         METRIC = 'qt'
         pandas_reader = pd.read_pickle
-    elif TASK == 'kociemba10':
-        FILE = 'kociemba10_dataset.pkl'
+    elif TASK in ['kociemba10', 'kociemba100', 'kociemba1000']:
+        FILE = f'{TASK}_dataset.pkl'
         METRIC = 'ft'
         pandas_reader = pd.read_pickle
-    elif TASK == 'kociemba':
-        FILE = 'kociemba_dataset.csv'
+    elif TASK in ['kociemba10000', 'kociemba100000']:
+        FILE = f'{TASK}_dataset.csv'
         METRIC = 'ft'
         pandas_reader = functools.partial(pd.read_csv, index_col=0,
                                           converters={'colors': ast.literal_eval,
-                                                      'distance': ast.literal_eval})
+                                                      'distance': ast.literal_eval,
+                                                      'generator': create_cubestate_from_gen})
     else:
         raise Exception
 

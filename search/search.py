@@ -27,7 +27,7 @@ def get_best_actions(generator):
 
 def create_cubestate_from_gen(generator):
     state = global_cube.generate_goal_states(1)[0]
-    for move in generator:
+    for move in generator[0]:
         state = change_cubestate(state, move)
     return state
 

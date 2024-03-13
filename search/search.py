@@ -1,4 +1,5 @@
 import copy
+import heapq
 
 import numpy as np
 import torch
@@ -63,12 +64,11 @@ def eval_graph_single(colors, network):
     return network(graph_data).flatten().item()
 
 
-def search_bounded(cube_state, generator, network, metric, pred_dict, eval_single_func, bound=20):
+def greedy_search_bounded(cube_state, generator, network, metric, pred_dict, eval_single_func, bound=20):
     counter = 0
-    goal_found = False
     path = []
     old_state = cube_state
-    while not goal_found and counter < bound:
+    while counter < bound:
         preds = []
         new_states = []
         for action in ACTION_DICT[metric]:
@@ -85,8 +85,35 @@ def search_bounded(cube_state, generator, network, metric, pred_dict, eval_singl
                 pred_distance = eval_single_func(input_colors, network)
                 pred_dict[input_immutable] = pred_distance
             preds.append(pred_distance)
-        old_state = new_states[np.argmin(preds)]
+        argmin = np.argmin(preds)
+        old_state = new_states[argmin]
+        path.append(ACTION_DICT[metric][argmin])
+        counter += 1
     return False, False, None
+
+
+def astar_search_bounded(cube_state, generator, network, metric, pred_dict, eval_single_func, bound=20):
+    queue = []
+    old_state = cube_state
+    old_len = 0
+    while old_len < bound:
+        preds = []
+        for action in ACTION_DICT[metric]:
+            new_state = change_cubestate(old_state, action)
+            new_len = old_len + 1
+            input_colors = new_state.colors // 9
+            if is_goal_colors(input_colors):
+                return True, new_len == len(generator[0])
+            input_immutable = tuple(input_colors)
+            if input_immutable in pred_dict:
+                pred_distance = pred_dict[input_immutable]
+            else:
+                pred_distance = eval_single_func(input_colors, network)
+                pred_dict[input_immutable] = pred_distance
+            preds.append(pred_distance)
+            heapq.heappush(queue, (pred_distance + new_len, new_len, new_state))
+        _, old_len, old_state = heapq.heappop(queue)
+    return False, False
 
 
 def calc_solved_rates(states, generators, network, network_name, metric, pred_dict, eval_single_func):
@@ -94,11 +121,12 @@ def calc_solved_rates(states, generators, network, network_name, metric, pred_di
     print(f"Network {network_name}")
     solved, perfectly_solved = 0, 0
     for state, generator in tqdm.tqdm(zip(states, generators), miniters=1000):
-        is_solved, is_perf_solved, path = search_bounded(state, generator, network, metric, pred_dict, eval_single_func)
+        is_solved, is_perf_solved, path = greedy_search_bounded(state, generator, network, metric, pred_dict, eval_single_func)
         if is_solved:
             solved += 1
             if is_perf_solved:
                 perfectly_solved += 1
+        print(len(generator[0]), len(path) if path is not None else None)
     solved_rate = solved / n_states
     perf_solved_rate = perfectly_solved / n_states
     print(f"Solved rate: {solved_rate}, Perf. solved rate: {perf_solved_rate}, nr of examples {n_states}")

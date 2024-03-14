@@ -83,7 +83,7 @@ def greedy_search_bounded(cube_state, generator, network, metric, pred_dict, eva
                 pred_distance = pred_dict[input_immutable]
             else:
                 pred_distance = eval_single_func(input_colors, network)
-                pred_dict[input_immutable] = pred_distance
+                # pred_dict[input_immutable] = pred_distance
             preds.append(pred_distance)
         argmin = np.argmin(preds)
         old_state = new_states[argmin]
@@ -96,6 +96,8 @@ def astar_search_bounded(cube_state, generator, network, metric, pred_dict, eval
     queue = []
     old_state = cube_state
     old_len = 0
+    states = []
+    number_of_expanded = 0
     while old_len < bound:
         preds = []
         for action in ACTION_DICT[metric]:
@@ -103,34 +105,43 @@ def astar_search_bounded(cube_state, generator, network, metric, pred_dict, eval
             new_len = old_len + 1
             input_colors = new_state.colors // 9
             if is_goal_colors(input_colors):
-                return True, new_len == len(generator[0])
+                return True, new_len == len(generator[0]), number_of_expanded
             input_immutable = tuple(input_colors)
             if input_immutable in pred_dict:
                 pred_distance = pred_dict[input_immutable]
             else:
                 pred_distance = eval_single_func(input_colors, network)
-                pred_dict[input_immutable] = pred_distance
+                # pred_dict[input_immutable] = pred_distance
             preds.append(pred_distance)
-            heapq.heappush(queue, (pred_distance + new_len, new_len, new_state))
-        _, old_len, old_state = heapq.heappop(queue)
-    return False, False
+            states.append(new_state)
+            heapq.heappush(queue, (pred_distance + new_len, new_len, number_of_expanded))
+            number_of_expanded += 1
+        _, old_len, old_state_idx = heapq.heappop(queue)
+        old_state = states[old_state_idx]
+    return False, False, number_of_expanded
 
 
-def calc_solved_rates(states, generators, network, network_name, metric, pred_dict, eval_single_func):
+def calc_solved_rates(states, generators, network, network_name, metric, pred_dict, eval_single_func, search_func):
     n_states = len(states)
     print(f"Network {network_name}")
     solved, perfectly_solved = 0, 0
+    paths_or_expansions = []
     for state, generator in tqdm.tqdm(zip(states, generators), miniters=1000):
-        is_solved, is_perf_solved, path = greedy_search_bounded(state, generator, network, metric, pred_dict, eval_single_func)
+        is_solved, is_perf_solved, path_or_expansion = search_func(state, generator, network, metric, pred_dict, eval_single_func)
         if is_solved:
             solved += 1
             if is_perf_solved:
                 perfectly_solved += 1
-        print(len(generator[0]), len(path) if path is not None else None)
+        paths_or_expansions.append(path_or_expansion)
+        # print(len(generator[0]), len(path) if path is not None else None)
     solved_rate = solved / n_states
     perf_solved_rate = perfectly_solved / n_states
     print(f"Solved rate: {solved_rate}, Perf. solved rate: {perf_solved_rate}, nr of examples {n_states}")
-    return solved_rate, perf_solved_rate, solved, perfectly_solved, n_states
+    if search_func is astar_search_bounded:
+        mean_expansion_rate = np.mean(paths_or_expansions)
+        median_expansion_rate = np.median(paths_or_expansions)
+        print(f"Mean expansion rate: {mean_expansion_rate}, median expansion rate: {median_expansion_rate}")
+    return solved_rate, perf_solved_rate, solved, perfectly_solved, paths_or_expansions, n_states
 
 
 def next_if_correct(cube_state, generator, network, metric, pred_dict, dist_dict, eval_single_func):
@@ -149,8 +160,8 @@ def next_if_correct(cube_state, generator, network, metric, pred_dict, dist_dict
         else:
             pred_distance = eval_single_func(input_colors, network)
             true_distance = orig_dist + 1
-            pred_dict[input_immutable] = pred_distance
-            dist_dict[input_immutable] = true_distance
+            # pred_dict[input_immutable] = pred_distance
+            # dist_dict[input_immutable] = true_distance
         preds.append(pred_distance)
         dists.append(true_distance)
         if action in best_actions:
@@ -185,8 +196,8 @@ def is_prediction_correct(cube_state, generator, network, metric, dataset_name, 
         else:
             pred_distance = eval_single_func(input_colors, network)
             true_distance = orig_dist + 1
-            pred_dict[input_immutable] = pred_distance
-            dist_dict[input_immutable] = true_distance
+            # pred_dict[input_immutable] = pred_distance
+            # dist_dict[input_immutable] = true_distance
         preds.append(pred_distance)
         dists.append(true_distance)
         if action in best_actions:
@@ -251,15 +262,16 @@ def load_model(path):
 
 
 def single_solved_rate_n_moves(states, generators, train_colors, test_colors, train_loader, test_loader, metric,
-                               dataset_name, model_name, test_size, random_seed, eval_single_func, curr_folder):
+                               dataset_name, model_name, test_size, random_seed, eval_single_func, curr_folder,
+                               search_func):
     path = f'{curr_folder}/checkpoints/{dataset_name}/{model_name}/model_rs{random_seed}_ts{test_size:.1f}.pth'
     network = load_model(path)
     pred_dict, dist_dict = eval_dataset(network, train_loader, test_loader, train_colors, test_colors)
-    solved_rate, perf_solved_rate, solved, perfectly_solved, n_states = calc_solved_rates(
+    solved_rate, perf_solved_rate, solved, perfectly_solved, paths_or_expansions, n_states = calc_solved_rates(
         states, generators, network, f'{model_name}, t.s. {test_size:.1f}, r.s. {random_seed}',
-        metric, pred_dict, eval_single_func
+        metric, pred_dict, eval_single_func, search_func
     )
-    return solved_rate, perf_solved_rate, solved, perfectly_solved, n_states
+    return solved_rate, perf_solved_rate, solved, perfectly_solved, paths_or_expansions, n_states
 
 
 def single_accuracy_n_moves(states, generators, train_colors, test_colors, train_loader, test_loader, metric,

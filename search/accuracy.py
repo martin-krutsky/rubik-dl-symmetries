@@ -12,12 +12,12 @@ from classes.cube_classes import Cube3
 from pytorch_classes.config import CONFIGS
 import pytorch_classes.graph_dataset as gd
 import pytorch_classes.color_dataset as cd
-from search.search import single_accuracy_n_moves, eval_color_single, eval_graph_single, create_loader, \
+from search import single_accuracy_n_moves, eval_color_single, eval_graph_single, create_loader, \
     create_cubestate_from_gen, create_cubestate_from_colors
 
 if __name__ == '__main__':
-    CURRFOLDER = '.'
-    TASK = 'kociemba10'
+    CURRFOLDER = '..'
+    TASK = 'kociemba10000'
     MODEL = 'ResNet'
 
     if TASK == '5moves':
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         create_loader = functools.partial(create_loader, dataset_func=gd.create_data_list,
                                           dataloader_cls=GraphLoader, split_type=split_type)
 
-    CONFIG_NR = int(sys.argv[1])
+    CONFIG_NR = 0  # int(sys.argv[1])
     rnd_seed, tst_size = CONFIGS[CONFIG_NR]
 
     df = pandas_reader(f'{CURRFOLDER}/data/processed/{FILE}')
@@ -65,7 +65,7 @@ if __name__ == '__main__':
                                                          tr_loader, ts_loader, METRIC, TASK, MODEL, tst_size, rnd_seed,
                                                          eval_func, CURRFOLDER)
     print(f'Accuracy: {acc}')
-    out_folder = f'{CURRFOLDER}/data/evals/{TASK}/{MODEL}'
-    os.makedirs(out_folder, exist_ok=True)
-    with open(f'{out_folder}/ts{tst_size:.1f}_rs{rnd_seed}.txt', 'w') as f:
-        f.write('\n'.join([str(acc), str(correct), str(nr_of_states)]))
+    # out_folder = f'{CURRFOLDER}/data/evals/{TASK}/{MODEL}'
+    # os.makedirs(out_folder, exist_ok=True)
+    # with open(f'{out_folder}/ts{tst_size:.1f}_rs{rnd_seed}.txt', 'w') as f:
+    #     f.write('\n'.join([str(acc), str(correct), str(nr_of_states)]))

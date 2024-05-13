@@ -10,5 +10,6 @@ analyzed_results/*
 
 *.BATCH
 *.npy
+*.csv
 *.pth
 *.temp

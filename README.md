@@ -4,7 +4,7 @@ A repository for the project on using symmetry-aware deep learning architectures
 To reproduce the results, download data from [Google Drive](https://drive.google.com/drive/folders/1jEhSZc4QXKETcHl7HUjaPRaa3KTS_5SI?usp=share_link) and save it to a `data` folder.
 The data for the sampled dataset collected by [Herbert Kociemba](http://kociemba.org/) are available at [http://kociemba.org/math/optman/100000optcubes.zip](http://kociemba.org/math/optman/100000optcubes.zip)
 
-The generated plots can be found at [Google Drive](https://drive.google.com/drive/u/1/folders/14ezlOzEoX2d5CWgkDuFBUcjBHScYstKC).
+The generated plots can be found at [Google Drive]([https://drive.google.com/drive/u/1/folders/14ezlOzEoX2d5CWgkDuFBUcjBHScYstKC](https://drive.google.com/drive/folders/14ezlOzEoX2d5CWgkDuFBUcjBHScYstKC?usp=sharing)).
 
 ## Installation
 Create a Python environment, e.g., with `venv`, and activate it: 
